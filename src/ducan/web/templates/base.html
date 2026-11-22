@@ -9,13 +9,14 @@
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
   <script src="/static/register-sw.js" defer></script>
+  <script src="/static/copy.js" defer></script>
 </head>
 <body hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>
 {% if request.session.get("auth") %}
 <header class="top"><div class="in">
   <a class="brand" href="/">{% if brand.has("logo_svg") %}<img src="/brand/logo_svg" alt="{{ brand.name or 'Dućan AI' }}">{% else %}{{ brand.name or "Dućan AI" }}{% endif %}</a>
   <nav>
-    {% for href, label in [("/", "Početna"), ("/akcije", "Odobrenja"), ("/proizvodi", "Proizvodi"), ("/dobavljaci", "Dobavljači"), ("/zalihe", "Zalihe"), ("/raspored", "Raspored"), ("/osoblje", "Osoblje"), ("/prodaja", "Prodaja"), ("/konkurencija", "Konkurencija"), ("/audit", "Dnevnik")] %}
+    {% for href, label in [("/", "Početna"), ("/akcije", "Odobrenja"), ("/proizvodi", "Proizvodi"), ("/dobavljaci", "Dobavljači"), ("/zalihe", "Zalihe"), ("/raspored", "Raspored"), ("/osoblje", "Osoblje"), ("/prodaja", "Prodaja"), ("/konkurencija", "Konkurencija"), ("/sadrzaj", "Sadržaj"), ("/recenzije", "Recenzije"), ("/faq", "Chat"), ("/transparentnost", "AI izjava"), ("/audit", "Dnevnik")] %}
     <a href="{{ href }}" class="{{ 'on' if (path == href or (href != '/' and path.startswith(href))) else '' }}">{{ label }}</a>
     {% endfor %}
   </nav>

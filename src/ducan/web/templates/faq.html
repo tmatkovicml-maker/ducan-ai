@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Pitanja i odgovori za chat</h1>
+{% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+<p class="muted">Chat na webu odgovara samo iz pitanja koja si ovdje označio kao provjerena, uz cijene, dostupnost i radno vrijeme iz sustava. Kad ne zna odgovor, proslijedi pitanje i ono se pojavi na dnu ove stranice.</p>
+<form method="post" action="/faq" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {% if edit %}<input type="hidden" name="id" value="{{ edit.id }}">{% endif %}
+  <label>Pitanje (hrvatski) <input name="question_hr" value="{{ edit.question_hr if edit else '' }}" required></label>
+  {% for l in languages %}
+  <label>Odgovor {{ l|upper }}{% if l == "hr" %} (obavezno){% endif %} <textarea name="answer_{{ l }}" rows="2">{{ edit.answers.get(l, '') if edit else '' }}</textarea></label>
+  {% endfor %}
+  <label>Dodatne riječi za pretragu (bilo koji jezik) <input name="keywords" value="{{ edit.keywords if edit else '' }}"></label>
+  <label class="check"><input type="checkbox" name="reviewed" {{ 'checked' if edit and edit.reviewed }}> Provjereno: chat smije koristiti ovaj odgovor</label>
+  <div class="row"><button type="submit">{{ "Spremi izmjene" if edit else "Dodaj" }}</button>{% if edit %}<a class="btn ghost" href="/faq">Odustani</a>{% endif %}</div>
+</form>
+<div class="card table-wrap">
+<table><tr><th>Pitanje</th><th>Jezici</th><th>Stanje</th></tr>
+{% for e in entries %}<tr><td><a href="/faq?uredi={{ e.id }}">{{ e.question_hr }}</a></td><td>{{ e.answers.keys()|join(", ")|upper }}</td><td>{% if e.reviewed %}<span class="pill executed">provjereno</span>{% else %}<span class="pill proposed">nije provjereno</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="3" class="muted">Još nema pitanja. Dodaj npr. radno vrijeme, plaćanje karticom, gdje je parking, prodajete li led.</td></tr>{% endfor %}
+</table></div>
+<section class="card">
+  <h2>Pitanja koja je chat proslijedio osoblju</h2>
+  {% for q in escalations %}
+  <div class="row"><span class="grow">{{ q.created_at|dt }} · {{ q.language|upper }} · {{ q.question }}<br><span class="muted">{{ q.reason }}</span></span>
+  <form method="post" action="/faq/pitanje/{{ q.id }}/rijeseno"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="ghost" type="submit">Riješeno</button></form></div>
+  {% else %}<p class="muted">Nema otvorenih pitanja.</p>{% endfor %}
+  <p class="muted">Ako se neko pitanje ponavlja, dodaj ga gore kao provjereni odgovor.</p>
+</section>
+{% endblock %}

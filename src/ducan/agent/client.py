@@ -50,6 +50,7 @@ class AgentRun:
     """Outcome of :meth:`Agent.run`."""
 
     submitted: dict[str, Any] | None
+    submitted_by: str | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     stop_reason: str | None = None
 
@@ -87,11 +88,12 @@ class Agent:
         system: str,
         user: str,
         tools: list[Tool],
-        submit_tool: str,
+        submit_tool: str | tuple[str, ...],
         max_turns: int = 6,
         action_id: int | None = None,
     ) -> AgentRun:
-        """Loop until the model calls ``submit_tool`` (or gives up). Raises LLMUnavailable."""
+        """Loop until the model calls a submit tool (or gives up). Raises LLMUnavailable."""
+        finals = (submit_tool,) if isinstance(submit_tool, str) else submit_tool
         by_name = {t.name: t for t in tools}
         messages: list[dict[str, Any]] = [{"role": "user", "content": user}]
         outcome = AgentRun(submitted=None)
@@ -123,8 +125,9 @@ class Agent:
                 if block.type != "tool_use":
                     continue
                 tool = by_name.get(block.name)
-                if block.name == submit_tool:
+                if block.name in finals:
                     outcome.submitted = dict(block.input)
+                    outcome.submitted_by = block.name
                     calls.append({"name": block.name, "input": block.input})
                     continue
                 try:
@@ -185,6 +188,6 @@ class Agent:
                 messages.append({"role": "user", "content": results})
             else:
                 messages.append(
-                    {"role": "user", "content": f"Call the {submit_tool} tool with your answer."}
+                    {"role": "user", "content": f"Call the {' or '.join(finals)} tool to finish."}
                 )
         return outcome

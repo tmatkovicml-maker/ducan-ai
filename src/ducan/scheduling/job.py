@@ -63,7 +63,7 @@ def run_rota(
                         session,
                         business,
                         action_type=ActionType.SHIFT_SCHEDULE,
-                        title=f"Raspored {week_start:%d.%m.}–"
+                        title=f"tjedan {week_start:%d.%m.}–"
                         f"{week_start + timedelta(days=6):%d.%m.%Y.}",
                         payload={
                             "week_start": week_start.isoformat(),

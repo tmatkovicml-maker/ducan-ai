@@ -12,6 +12,14 @@
   {% if action.payload.get("draft_text") %}
   {% if action.payload.get("subject") %}<p><strong>Predmet:</strong> {{ action.payload.subject }}</p>{% endif %}
   <pre>{{ action.payload.draft_text }}</pre>{% endif %}
+  {% if action.payload.get("texts") %}
+  {% if action.payload.get("review_text") %}<p class="muted">Recenzija ({{ action.payload.stars }}★): {{ action.payload.review_text[:300] }}</p>{% endif %}
+  {% for lang, text in action.payload.texts.items() %}
+  <div class="copyable stack"><strong>{{ lang|upper }}</strong><pre data-copy>{{ text }}</pre><div><button class="ghost copy" type="button">Kopiraj</button></div></div>
+  {% endfor %}
+  {% if action.type == "social_post" %}<p class="muted">{% if action.payload.brand_assets %}Slike: {{ action.payload.brand_assets|join(", ") }}{% else %}Samo tekst (nema odobrenih slika).{% endif %} Nakon odobrenja objavljuješ sam.</p>{% endif %}
+  {% if action.type == "review_reply" %}<p class="muted">Nakon odobrenja zalijepi odgovor na Google.</p>{% endif %}
+  {% endif %}
   {% if action.type == "shift_schedule" %}
   <div class="table-wrap"><table><tr><th>Dan</th><th>Smjena</th><th>Tko i zašto</th></tr>
   {% for s in action.payload.shifts %}<tr><td>{{ s.day|hrday }}</td><td>{{ s.start }}–{{ s.end }}{% if s.break_minutes %}<br><span class="muted">stanka {{ s.break_minutes }} min</span>{% endif %}</td><td><strong>{{ s.staff_name }}</strong><br><span class="muted">{{ s.why }}</span></td></tr>{% endfor %}
@@ -38,7 +46,7 @@
     <button class="danger" type="submit">Poništi</button>
   </form>
   {% elif action.status == "approved" %}
-  <p class="muted">{% if action.type == "purchase_order" %}Odobreno. Slanje e-mailom nije uključeno (SMTP nije postavljen): preuzmi narudžbenicu i pošalji je dobavljaču sam.{% else %}Odobreno. Izvršitelj za ovu vrstu akcije još nije uključen.{% endif %}</p>
+  <p class="muted">{% if action.type == "purchase_order" %}Odobreno. Slanje e-mailom nije uključeno (SMTP nije postavljen): preuzmi narudžbenicu i pošalji je dobavljaču sam.{% elif action.type in ("social_post", "review_reply") %}Odobreno. Kopiraj tekst i objavi ga.{% else %}Odobreno. Izvršitelj za ovu vrstu akcije još nije uključen.{% endif %}</p>
   {% endif %}
   {% if action.type == "purchase_order" and action.status in ("approved", "executed") %}
     {% if action.payload.get("received") %}<p class="ok-msg">Roba je zaprimljena.</p>

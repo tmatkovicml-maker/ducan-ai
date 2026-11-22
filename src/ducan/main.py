@@ -18,7 +18,9 @@ from ducan.web.routes import (
     actions,
     audit,
     auth,
+    chat_api,
     competitors,
+    content,
     dashboard,
     my_shifts,
     products,
@@ -78,6 +80,8 @@ def create_app(
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     for module in (
         auth,
+        chat_api,
+        content,
         dashboard,
         my_shifts,
         products,

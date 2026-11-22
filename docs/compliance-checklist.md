@@ -77,6 +77,17 @@ Pitanja:
   obradi podataka (DPA)?
 - Kako kupac može tražiti brisanje svojih podataka?
 
+Što sustav trenutačno radi (da računovođa ili pravnik mogu procijeniti):
+- **Recenzije:** sprema tekst, ocjenu i, ako ga upišeš, ime autora. Recenziju možeš obrisati.
+- **Chat:** ne sprema razgovore ni podatke o kupcu. Sprema samo pitanja na koja nije znao
+  odgovoriti (bez imena i kontakta). Poruka kupca šalje se AI modelu (Anthropic) radi odgovora,
+  a sažetak poziva (do 500 znakova) ostaje u dnevniku sustava.
+- **Osoblje:** ime, e-mail, uloga i dostupnost za raspored.
+
+Dodatna pitanja:
+- Koliko dugo smijemo čuvati dnevnik (audit) koji sadrži sažetke poruka iz chata?
+- Treba li na web stranici, uz chat, obavijest da poruke obrađuje vanjski pružatelj AI usluge?
+
 Napomena: sustav ne sprema brojeve kartica ni osobne podatke iz blagajne, i ne
 analizira snimke kamera ni ponašanje zaposlenika.
 

@@ -306,3 +306,66 @@ def test_personal_shift_page_needs_valid_token(client, factory):
         },
     )
     assert "Zahtjev je poslan" in response.text
+
+
+def test_chat_api_identity_and_cors(client, app_config):
+    app_config.env.chat_allowed_origins = "https://ducan.example.test"
+    ok = client.post(
+        "/api/chat",
+        json={"message": "Are you a bot?"},
+        headers={"Origin": "https://ducan.example.test"},
+    )
+    assert ok.status_code == 200 and ok.json()["language"] == "en"
+    assert "AI assistant" in ok.json()["text"]
+    assert ok.headers["access-control-allow-origin"] == "https://ducan.example.test"
+    other = client.post(
+        "/api/chat", json={"message": "Bok"}, headers={"Origin": "https://evil.example"}
+    )
+    assert "access-control-allow-origin" not in other.headers
+    intro = client.get("/api/chat/uvod?language=de").json()
+    assert "KI" in intro["text"] and intro["disclosure"].startswith("Dieses Geschäft")
+
+
+def test_chat_api_rate_limit_and_size(client):
+    from ducan.web.routes import chat_api
+
+    chat_api._hits.clear()
+    assert client.post("/api/chat", json={"message": "x" * 501}).status_code == 422
+    codes = [
+        client.post("/api/chat", json={"message": "Jesi li robot?"}).status_code
+        for _ in range(chat_api.LIMIT + 1)
+    ]
+    assert codes[-1] == 429
+    chat_api._hits.clear()
+
+
+def test_phase4_pages(logged_in, factory):
+    from ducan.models import FaqEntry, Review
+
+    for path in ("/sadrzaj", "/recenzije", "/faq", "/transparentnost"):
+        page = logged_in.get(path)
+        assert page.status_code == 200 and "Poslovanje dućana vodi AI" in page.text, path
+    assert logged_in.get("/transparentnost/natpis.pdf").content.startswith(b"%PDF")
+    token = csrf_from(logged_in.get("/faq").text)
+    logged_in.post(
+        "/faq",
+        data={
+            "csrf_token": token,
+            "question_hr": "Radite li nedjeljom?",
+            "answer_hr": "Da, nedjeljom radimo.",
+            "reviewed": "on",
+        },
+    )
+    response = logged_in.post(
+        "/recenzije", data={"csrf_token": token, "text": "Odlično!", "stars": "5", "language": "hr"}
+    )
+    assert "AI model nije postavljen" in response.text  # saved, but no model configured
+    with factory() as s:
+        assert s.query(FaqEntry).one().reviewed
+        assert s.query(Review).count() == 1
+    assert (
+        "Da, nedjeljom radimo."
+        in logged_in.post(
+            "/api/chat", json={"message": "radite li nedjeljom", "language": "hr"}
+        ).json()["text"]
+    )

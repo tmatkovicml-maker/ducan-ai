@@ -8,7 +8,7 @@ effects itself.
 All user-facing text is Croatian. Code, comments and docs are English, except
 `docs/compliance-checklist.md`, which is written for the owner and the accountant.
 
-Status: **Phase 3 (staff scheduling)**. See "What is built" below.
+Status: **Phase 4 (communication and content)**. Phase 5 (self-service) is not started. See "What is built" below.
 
 ## Setup (local)
 
@@ -161,12 +161,33 @@ below the floor or off a price point. Nothing is scraped from the web.
 * Note: during a single person's break the shop is not covered; the owner decides how to
   handle that (the generator does not plan break cover).
 
+## Communication and content
+
+* **AI disclosure everywhere.** `ducan.comms.disclosure` holds the sentence in HR/EN/DE/IT,
+  texts for job ads, suppliers and the chat intro (page **AI izjava**), and the printable A4
+  window sign (`/transparentnost/natpis.pdf`). Code appends the line to every email, post,
+  review reply and chat answer; the model never decides whether it appears.
+* **Public text checks** (`ducan.comms.checks`), on top of the reference validator: no
+  discount/offer/promotion wording (there is no promotions table, so any is invented) and
+  clock times only from `opening_hours.yaml`.
+* **Social posts** (**Sadržaj**): calendar entries (date, topic, products, languages, brand
+  assets). The model drafts HR/EN/DE/IT text from tool data only; drafts that fail the checks
+  are not queued. Images only from `brand/brand.yaml` (none yet, so posts are text-only).
+  Daily job at 07:05 drafts entries due within two days. Approved posts are published by hand.
+* **Review replies** (**Recenzije**): paste a Google review; the model drafts a short, warm,
+  non-defensive reply in the review's language with no promises. 4–5★ replies are low-risk.
+* **Customer chat** (**Chat** page, `POST /api/chat`, widget `static/chat-widget.js`):
+  answers only from owner-reviewed FAQ entries and live product/opening-hours tools; asked
+  whether it is an AI it says so immediately (no model call); otherwise it escalates and the
+  question appears on the Chat page. Without a model it answers from the FAQ only.
+  CORS: `CHAT_ALLOWED_ORIGINS`; 20 messages per 10 minutes per address; 500 characters.
+
 ## The AI agent
 
 The numbers (quantities, prices, totals) are always computed by code. The model
-(`ANTHROPIC_MODEL`, never hard-coded) currently writes only the short justification for
-price proposals, using read-only tools (product facts, owner-entered competitor prices,
-sales). Its text must pass the reference validator; otherwise the template text is used.
+(`ANTHROPIC_MODEL`, never hard-coded) writes the price justifications, social posts, review
+replies and chat answers, using read-only tools (product facts, stock yes/no, opening hours,
+owner-reviewed FAQ, owner-entered competitor prices, sales). Its text must pass the reference validator; otherwise the template text is used.
 Every model request is written to the audit log with the input summary, tool calls,
 output, stop reason and token counts (`llm.call`). Without `ANTHROPIC_MODEL` no model is
 called.
@@ -221,4 +242,10 @@ Every rollback and refusal appears under **Dnevnik**.
 * Approval publishes shifts and emails staff (notifier interface; Telegram/WhatsApp later).
 * Shift-swap flow through a personal link, owner decision re-checked against the rules.
 
-Phase 4 tables (content calendar, reviews, FAQ) are added with that phase.
+## What is built (Phase 4)
+
+* Content calendar and multilingual post drafts; review reply drafts; customer FAQ chat API
+  and website widget; chat escalations for the owner.
+* AI disclosure texts in four languages, A4 window sign, public text checks.
+
+Not built: Phase 5 (after-hours self-service) waits for the owner's legal answers.

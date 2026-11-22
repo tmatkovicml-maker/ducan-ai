@@ -13,6 +13,7 @@ from ducan.db import make_engine, make_sessionmaker
 from ducan.jobs.tasks import (
     check_stock,
     import_sales,
+    posts,
     pricing,
     replenish,
     rota,
@@ -66,6 +67,16 @@ def build_scheduler() -> BlockingScheduler:
         minute=30,
         args=[config, factory],
         id="pricing",
+        max_instances=1,
+        coalesce=True,
+    )
+    scheduler.add_job(
+        posts,
+        "cron",
+        hour=7,
+        minute=5,
+        args=[config, factory],
+        id="posts",
         max_instances=1,
         coalesce=True,
     )

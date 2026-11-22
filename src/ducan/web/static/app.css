@@ -77,3 +77,6 @@ svg.chart .tick { fill: var(--muted); font-size: 9px; }
 td.num { white-space: nowrap; }
 .ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; padding-top: 4px; }
 .grid.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); }
+.copyable { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.copyable.stack { display: grid; gap: 6px; }
+.copyable pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font-size: 13px; background: var(--bg); padding: 8px; border-radius: 6px; flex: 1 1 100%; }

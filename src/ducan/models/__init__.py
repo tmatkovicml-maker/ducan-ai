@@ -2,6 +2,12 @@
 
 from ducan.models.actions import Action, ActionStatus, ActionType, AuditLog
 from ducan.models.catalog import PriceHistory, Product, Supplier
+from ducan.models.content import (
+    ChatEscalation,
+    ContentCalendarEntry,
+    FaqEntry,
+    Review,
+)
 from ducan.models.inventory import MovementKind, StockLevel, StockMovement
 from ducan.models.jobs import JobRun
 from ducan.models.pricing import CompetitorPrice
@@ -14,6 +20,10 @@ __all__ = [
     "ActionStatus",
     "ActionType",
     "AuditLog",
+    "ChatEscalation",
+    "ContentCalendarEntry",
+    "FaqEntry",
+    "Review",
     "CompetitorPrice",
     "JobRun",
     "MovementKind",

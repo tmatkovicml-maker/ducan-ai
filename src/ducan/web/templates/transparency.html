@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Transparentnost: AI vodi dućan</h1>
+<p class="muted">Gotovi tekstovi za mjesta na kojima ljudi trebaju znati da dućanom upravlja AI. Sustav ih sam dodaje u svoje e-mailove, objave i chat. Ovdje su za mjesta koja objavljuješ ti.</p>
+<section class="card stack">
+  <h2>Natpis za izlog (A4)</h2>
+  <p>Rečenica na hrvatskom, engleskom, njemačkom i talijanskom, spremna za ispis.</p>
+  <div><a class="btn" href="/transparentnost/natpis.pdf">Preuzmi PDF</a></div>
+</section>
+<section class="card stack">
+  <h2>Glavna rečenica</h2>
+  {% for lang, text in d.DISCLOSURE.items() %}<div class="copyable"><span class="muted">{{ lang|upper }}</span> <span data-copy>{{ text }}</span> <button class="ghost copy" type="button">Kopiraj</button></div>{% endfor %}
+</section>
+<section class="card stack">
+  <h2>Oglas za posao</h2>
+  <div class="copyable"><span data-copy>{{ d.JOB_AD_TEXT }}</span> <button class="ghost copy" type="button">Kopiraj</button></div>
+</section>
+<section class="card stack">
+  <h2>Dobavljači</h2>
+  <div class="copyable"><span data-copy>{{ d.SUPPLIER_TEXT }}</span> <button class="ghost copy" type="button">Kopiraj</button></div>
+</section>
+<section class="card stack">
+  <h2>Chat za kupce</h2>
+  {% for lang, text in d.CHAT_INTRO.items() %}<div class="copyable"><span class="muted">{{ lang|upper }}</span> <span data-copy>{{ text }}</span> <button class="ghost copy" type="button">Kopiraj</button></div>{% endfor %}
+  <p>Ako netko pita je li razgovara s AI-jem, chat odmah i istinito odgovori da jest.</p>
+</section>
+<section class="card stack">
+  <h2>Chat na vašoj web stranici</h2>
+  <p>Zalijepi ovaj kod prije <code>&lt;/body&gt;</code> na web stranici dućana. Adresu stranice upiši u <code>CHAT_ALLOWED_ORIGINS</code>.</p>
+  <div class="copyable"><pre data-copy>&lt;script src="{{ base }}/static/chat-widget.js" data-api="{{ base }}" defer&gt;&lt;/script&gt;</pre> <button class="ghost copy" type="button">Kopiraj</button></div>
+</section>
+{% endblock %}

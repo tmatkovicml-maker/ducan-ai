@@ -48,6 +48,7 @@ class EnvSettings(BaseSettings):
     pdf_font_path: Path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
     owner_email: str | None = None
     public_base_url: str | None = None
+    chat_allowed_origins: str | None = None
 
     @field_validator("secret_key")
     @classmethod

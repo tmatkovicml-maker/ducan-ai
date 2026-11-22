@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kalendar objava</h1>
+{% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+<p class="muted">Upiši temu i datum. AI priprema tekst na odabranim jezicima samo iz podataka u sustavu: proizvoda, cijena i radnog vremena. Objavu pregledaš i odobriš pod Odobrenja, a zatim je sam objaviš.</p>
+<form method="post" action="/sadrzaj" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="fields">
+    <label>Datum objave <input type="date" name="publish_on" required></label>
+    <label>Tema <select name="topic">{% for key, label in topics.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+  </div>
+  <label>Proizvodi (neobavezno, više uz Ctrl/Cmd)
+    <select name="skus" multiple size="5">{% for p in products %}<option value="{{ p.sku }}">{{ p.name_hr }} ({{ p.sku }})</option>{% endfor %}</select></label>
+  <div class="row">{% for lang in languages %}<label class="check"><input type="checkbox" name="lang_{{ lang }}" checked> {{ lang|upper }}</label>{% endfor %}</div>
+  {% if assets %}
+  <div class="row">Slike iz brand mape: {% for a in assets %}<label class="check"><input type="checkbox" name="assets" value="{{ a }}"> {{ a }}</label>{% endfor %}</div>
+  {% else %}<p class="muted">U brand mapi nema slika, pa su objave samo tekst. Sustav nikad ne izrađuje logo ni slike.</p>{% endif %}
+  <label>Napomena za AI (neobavezno) <input name="notes" maxlength="300"></label>
+  <div><button type="submit">Dodaj u kalendar</button></div>
+</form>
+<div class="card table-wrap">
+<table><tr><th>Datum</th><th>Tema</th><th>Jezici</th><th>Stanje</th><th></th></tr>
+{% for e in entries %}
+<tr><td class="nowrap">{{ e.publish_on.strftime('%d.%m.%Y.') }}</td><td>{{ topics.get(e.topic, e.topic) }}{% if e.skus %}<br><span class="muted">{{ e.skus|join(", ") }}</span>{% endif %}</td>
+<td>{{ e.languages|join(", ")|upper }}</td>
+<td>{% if e.action_id %}<a href="/akcije">prijedlog #{{ e.action_id }}</a>{% else %}<span class="muted">nije pripremljeno</span>{% endif %}</td>
+<td>{% if not e.action_id %}<form method="post" action="/sadrzaj/{{ e.id }}/pripremi"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="ghost" type="submit">Pripremi</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Kalendar je prazan.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

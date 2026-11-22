@@ -86,3 +86,48 @@ def rota_deadline(config: AppConfig, factory: sessionmaker[Session]) -> JobRun:
         run = check_rota_deadline(session, config, _today(config), make_notifier(config.env))
         session.commit()
         return run
+
+
+def posts(config: AppConfig, factory: sessionmaker[Session]) -> JobRun:
+    """Daily: draft posts for calendar entries due in the next two days."""
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from ducan.brand import load_brand
+    from ducan.comms.posts import PostNotDrafted, draft_post
+    from ducan.db import utcnow
+    from ducan.models import ContentCalendarEntry
+
+    today = _today(config)
+    brand = load_brand(config.env.brand_dir)
+    agent = make_agent(config)
+    with factory() as session:
+        run = JobRun(job="posts", started_at=utcnow())
+        session.add(run)
+        session.flush()
+        proposed, flags = [], []
+        due = session.scalars(
+            select(ContentCalendarEntry).where(
+                ContentCalendarEntry.action_id.is_(None),
+                ContentCalendarEntry.publish_on >= today,
+                ContentCalendarEntry.publish_on <= today + timedelta(days=2),
+            )
+        )
+        for entry in list(due):
+            try:
+                proposed.append(draft_post(session, config.business, brand, entry, agent, today).id)
+            except PostNotDrafted as exc:
+                flags.append(f"Objava {entry.publish_on:%d.%m.}: {exc}")
+        run.finished_at = utcnow()
+        run.status = "ok"
+        run.summary = {"proposed": proposed, "flags": flags}
+        record(
+            session,
+            actor="agent",
+            event="job.posts",
+            summary=f"Objave: {len(proposed)} prijedloga",
+            details=run.summary,
+        )
+        session.commit()
+        return run

@@ -21,6 +21,7 @@ from ducan.importers.seed import SeedError, seed_database
 from ducan.jobs.tasks import (
     check_stock,
     import_sales,
+    posts,
     pricing,
     replenish,
     rota,
@@ -40,6 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("pricing", help="Run the weekly pricing now")
     sub.add_parser("rota", help="Propose next week's rota now")
     sub.add_parser("rota-deadline", help="Run the Thursday rota check now")
+    sub.add_parser("posts", help="Draft social posts due in the next two days")
     xlsx = sub.add_parser("import-assortment", help="Merge the 'Asortiman' sheet into products.csv")
     xlsx.add_argument("xlsx", type=Path)
     args = parser.parse_args(argv)
@@ -73,12 +75,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{issue.sku}: stanje {issue.level}, zbroj kretanja {issue.movements_sum}")
         print("U redu." if not issues else f"{len(issues)} neusklađenih.")
         return 1 if issues else 0
-    elif args.command in ("replenish", "pricing", "rota", "rota-deadline"):
+    elif args.command in ("replenish", "pricing", "rota", "rota-deadline", "posts"):
         job = {
             "replenish": replenish,
             "pricing": pricing,
             "rota": rota,
             "rota-deadline": rota_deadline,
+            "posts": posts,
         }[args.command]
         run = job(config, factory)
         print(f"Prijedlozi: {run.summary.get('proposed', [])}")

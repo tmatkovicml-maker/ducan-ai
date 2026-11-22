@@ -57,6 +57,22 @@ def _validate(
         from ducan.scheduling.service import validate_rota
 
         result.extend(validate_rota(session, payload, config))
+    public = action_type in (
+        ActionType.SOCIAL_POST,
+        ActionType.REVIEW_REPLY,
+        ActionType.CUSTOMER_MESSAGE,
+    )
+    texts = list((payload.get("texts") or {}).values())
+    if public and texts:
+        from ducan.comms.checks import check_public_text
+
+        try:
+            refs = [Reference.from_dict(r) for r in references]
+        except (KeyError, TypeError):
+            result.errors.append("Reference nacrta nisu ispravnog oblika.")
+            return result
+        for text in texts:
+            result.extend(check_public_text(session, text, refs, config))
     text = payload.get("draft_text")
     if text is not None:
         try:
