@@ -111,6 +111,14 @@ def check_person(
     intervals = sorted(planned | {s.interval(tz) for s in (prior or []) if s.start < s.end})
     min_rest = timedelta(hours=float(rules.min_daily_rest_hours))
     for (a_start, a_end), (b_start, _b_end) in zip(intervals, intervals[1:], strict=False):
+        if b_start < a_end:
+            problems.append(
+                f"{name}: smjene {a_start:%d.%m. %H:%M} i {b_start:%H:%M} se preklapaju."
+            )
+            continue
+        # Two shifts on the same day are covered by the daily maximum, not by daily rest.
+        if a_start.date() == b_start.date():
+            continue
         if (
             (a_start, a_end) in planned or (b_start, _b_end) in planned
         ) and b_start - a_end < min_rest:

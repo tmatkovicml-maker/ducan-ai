@@ -102,7 +102,7 @@ def days_of_cover(stock: Decimal, per_day: Decimal | None) -> Decimal | None:
     """How many days current stock lasts; None if demand is unknown or zero."""
     if per_day is None or per_day <= 0:
         return None
-    return stock / per_day
+    return max(stock, ZERO) / per_day
 
 
 def reorder_point(per_day: Decimal, horizon_days: int, min_stock: Decimal) -> Decimal:

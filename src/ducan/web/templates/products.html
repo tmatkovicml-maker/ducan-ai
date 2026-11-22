@@ -6,7 +6,7 @@
 <tr><th>SKU</th><th>Proizvod</th><th>Kategorija</th><th class="num">Nabavna (neto)</th><th class="num">MPC</th><th class="num">PDV</th><th class="num">Zaliha</th><th>Status</th></tr>
 {% for p in products %}
 <tr>
-  <td><a href="/proizvodi/{{ p.sku }}">{{ p.sku }}</a></td>
+  <td class="nowrap"><a href="/proizvodi/{{ p.sku }}">{{ p.sku }}</a></td>
   <td>{{ p.name_hr }}<br><span class="muted">{{ p.unit }}</span></td>
   <td>{{ p.category }}</td>
   <td class="num {{ 'unknown' if p.purchase_price_net is none }}">{{ p.purchase_price_net|money }}</td>

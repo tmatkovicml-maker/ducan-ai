@@ -61,17 +61,19 @@ footer { border-top: 1px solid var(--line); padding-block: 16px; color: var(--mu
 a.plain { text-decoration: none; color: inherit; }
 .login { max-width: 420px; margin: 40px auto; width: 100%; }
 pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
-td:first-child { white-space: nowrap; }
+.nowrap { white-space: nowrap; }
 @media (max-width: 640px) {
   header.top .in { justify-content: space-between; }
   nav { order: 3; flex: 1 0 100%; overflow-x: auto; flex-wrap: nowrap; }
   nav a { white-space: nowrap; }
 }
 .chart-wrap { overflow-x: auto; }
-svg.chart { width: 100%; min-width: 320px; height: auto; display: block; }
+svg.chart { width: 100%; min-width: 280px; height: 180px; display: block; }
 svg.chart .bar { fill: var(--accent); }
 svg.chart .hit { fill: transparent; }
 svg.chart .hit:hover + .bar, svg.chart .bar:hover { opacity: .8; }
 svg.chart .axis { stroke: var(--line); stroke-width: 1; }
 svg.chart .tick { fill: var(--muted); font-size: 9px; }
 td.num { white-space: nowrap; }
+.ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; padding-top: 4px; }
+.grid.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); }
