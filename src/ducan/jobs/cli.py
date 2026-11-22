@@ -16,7 +16,7 @@ from ducan.config import get_config
 from ducan.db import make_engine, make_sessionmaker
 from ducan.importers.assortment_xlsx import merge_into_csv
 from ducan.importers.seed import SeedError, seed_database
-from ducan.jobs.tasks import check_stock, import_sales
+from ducan.jobs.tasks import check_stock, import_sales, pricing, replenish
 
 SEED_DIR = Path("seed")
 
@@ -27,6 +27,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("seed", help="Load seed/suppliers.csv and seed/products.csv")
     sub.add_parser("import-sales", help="Import CSV files from the POS inbox")
     sub.add_parser("check-stock", help="Check stock levels against movements")
+    sub.add_parser("replenish", help="Run the nightly replenishment now")
+    sub.add_parser("pricing", help="Run the weekly pricing now")
     xlsx = sub.add_parser("import-assortment", help="Merge the 'Asortiman' sheet into products.csv")
     xlsx.add_argument("xlsx", type=Path)
     args = parser.parse_args(argv)
@@ -59,6 +61,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{issue.sku}: stanje {issue.level}, zbroj kretanja {issue.movements_sum}")
         print("U redu." if not issues else f"{len(issues)} neusklađenih.")
         return 1 if issues else 0
+    elif args.command in ("replenish", "pricing"):
+        run = (replenish if args.command == "replenish" else pricing)(config, factory)
+        print(f"Prijedlozi: {run.summary.get('proposed', [])}")
+        for flag in run.summary.get("flags", []):
+            print(f"- {flag}")
     return 0
 
 

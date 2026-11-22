@@ -20,6 +20,7 @@ plain substrings.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
@@ -106,11 +107,20 @@ def _product_value(session: Session, product: Product, field_name: str) -> Any:
     return getattr(product, field_name)
 
 
-def validate_draft(session: Session, draft: Draft) -> ValidationResult:
-    """Check a draft's references and the facts in its text against the database."""
+def validate_draft(
+    session: Session,
+    draft: Draft,
+    extra_money: Iterable[Decimal] = (),
+    extra_qty: Iterable[Decimal] = (),
+) -> ValidationResult:
+    """Check a draft's references and the facts in its text against the database.
+
+    ``extra_money`` / ``extra_qty`` are values computed by code (never by the
+    model), e.g. order line totals, that the text may also mention.
+    """
     result = ValidationResult()
-    allowed_money: set[Decimal] = set()
-    allowed_qty: set[Decimal] = set()
+    allowed_money: set[Decimal] = set(extra_money)
+    allowed_qty: set[Decimal] = set(extra_qty)
     referenced_skus: set[str] = set()
     referenced_suppliers: set[int] = set()
     referenced_names: list[str] = []

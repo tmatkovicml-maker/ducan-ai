@@ -8,7 +8,7 @@ effects itself.
 All user-facing text is Croatian. Code, comments and docs are English, except
 `docs/compliance-checklist.md`, which is written for the owner and the accountant.
 
-Status: **Phase 1 (foundations)**. See "What is built" below.
+Status: **Phase 2 (replenishment and pricing)**. See "What is built" below.
 
 ## Setup (local)
 
@@ -92,14 +92,66 @@ twice (sha256).
 # in Docker: docker compose exec web python -m ducan.jobs.cli <command>
 ```
 
-Scheduled in the worker: `import_sales` (every `pos.poll_minutes`), `check_stock`
-(daily 03:10). Nightly replenishment and weekly pricing arrive in Phase 2.
+```bash
+make replenish    # nightly replenishment now: proposes purchase orders
+make pricing      # weekly pricing now: proposes price changes
+```
+
+Scheduled in the worker: `import_sales` (every `pos.poll_minutes`), `replenishment`
+(daily 02:30), `check_stock` (daily 03:10), `pricing` (Mondays 03:30). Jobs only ever
+**propose**; every result lands in **Odobrenja**, and each run's notes for the owner
+("Treba tvoj unos") are shown on the dashboard.
+
+## Replenishment (nightly)
+
+Per active product: sales rate = 0.6 × 14-day average + 0.4 × 28-day average (divided by the
+days the shop has actually been selling), scaled by the monthly seasonal factor of the
+delivery date. Until `min_history_days` of history exist, an estimate from the product's
+share of sales and `demand_prior.expected_daily_revenue_gross` is blended in; with neither,
+the product is flagged, not guessed.
+
+Per supplier: the next delivery is the first delivery day after the lead time; stock has to
+last until the delivery after that (`horizon`). Order if
+`stock + open orders < rate × horizon + min_stock`, up to
+`min_stock + rate × (horizon + cover_days)`, capped by `max_stock` and by what can be sold
+within the shelf life. Lines are sorted by urgency; the least urgent are dropped until the
+order fits the per-order and weekly caps. Orders under the supplier's minimum are not
+proposed. Unknown lead times, delivery days, prices or max stock become flags.
+
+Each proposal carries a Croatian email (with the AI disclosure), a PDF and a CSV order sheet
+(download on the approval card). The email's numbers are validated against the database.
+After approval the email is sent with SMTP if `SMTP_HOST`/`SMTP_FROM` are set; otherwise
+the order stays "approved" and is sent by hand. When goods arrive, book them with
+**Primka** on the order card.
+
+## Pricing (weekly)
+
+Only when a floor margin is configured (`pricing.default_floor_margin_pct` or per category):
+
+1. margin below the floor -> raise to the lowest price point that restores it;
+2. a competitor price **you entered** (Konkurencija page, last 30 days) is more than
+   `competitor_gap_pct` below ours -> lower towards it, never below the floor.
+
+New prices are rounded to `pricing.price_points`. The validator rejects any price change
+below the floor or off a price point. Nothing is scraped from the web.
+
+## The AI agent
+
+The numbers (quantities, prices, totals) are always computed by code. The model
+(`ANTHROPIC_MODEL`, never hard-coded) currently writes only the short justification for
+price proposals, using read-only tools (product facts, owner-entered competitor prices,
+sales). Its text must pass the reference validator; otherwise the template text is used.
+Every model request is written to the audit log with the input summary, tool calls,
+output, stop reason and token counts (`llm.call`). Without `ANTHROPIC_MODEL` no model is
+called.
 
 ## Rolling back an executed action
 
 Open **Odobrenja → Izvršeno**, enter a reason on the action and press **Poništi**.
 Rollback is a *compensating action*, not a deletion:
 
+* `purchase_order`: an email already sent cannot be recalled; the rollback is refused and
+  you contact the supplier directly.
 * `price_change`: the old price is restored and a new price-history row is written. If the
   price was changed again in the meantime, the rollback is refused (to avoid overwriting
   a newer decision).
@@ -122,5 +174,16 @@ Every rollback and refusal appears under **Dnevnik**.
 * Tests: approval state machine, reference validator, order caps, CSV import, stock
   reconciliation, low-risk rules, brand assets, importers, web/auth, migrations.
 
-Phase 2+ tables (staff, shifts, content calendar, reviews) are added with the phases that
+## What is built (Phase 2)
+
+* Sales analytics, demand forecast with 14/28-day averages, seasonal factor and demand prior.
+* Nightly replenishment per supplier with caps, minimum orders, lead times, delivery days,
+  shelf life; Croatian email + PDF/CSV order sheet; SMTP sending after approval; receiving.
+* Weekly pricing with floor margins, price points and manual competitor prices.
+* LLM agent wrapper (manual tool-use loop, audit logging with token counts, optional
+  server-side refusal fallback and effort from `.env`), used for price reasons.
+* Dashboard: sales by day (chart + table), category margin, stock cover, expiring stock
+  (FIFO estimate from receipts), what to order today, notes for the owner.
+
+Phase 3+ tables (staff, shifts, content calendar, reviews) are added with the phases that
 use them.

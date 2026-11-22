@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
 from sqlalchemy.orm import Session, sessionmaker
 
 from ducan.audit.log import record
 from ducan.config import AppConfig
 from ducan.inventory.reconciliation import IntegrityIssue, check_integrity
+from ducan.models import JobRun
 from ducan.pos.csv_pos import CsvPos
 from ducan.pos.importer import ImportOutcome, import_from_adapter
+from ducan.pricing.job import make_agent, run_pricing
+from ducan.replenishment.job import run_replenishment
 
 
 def import_sales(config: AppConfig, factory: sessionmaker[Session]) -> list[ImportOutcome]:
@@ -39,3 +45,23 @@ def check_stock(factory: sessionmaker[Session]) -> list[IntegrityIssue]:
             )
             session.commit()
         return issues
+
+
+def _today(config: AppConfig) -> date:
+    return datetime.now(ZoneInfo(config.business.timezone)).date()
+
+
+def replenish(config: AppConfig, factory: sessionmaker[Session]) -> JobRun:
+    """Nightly: propose purchase orders. Nothing is sent before approval."""
+    with factory() as session:
+        run = run_replenishment(session, config, _today(config))
+        session.commit()
+        return run
+
+
+def pricing(config: AppConfig, factory: sessionmaker[Session]) -> JobRun:
+    """Weekly: propose price changes."""
+    with factory() as session:
+        run = run_pricing(session, config, _today(config), agent=make_agent(config))
+        session.commit()
+        return run

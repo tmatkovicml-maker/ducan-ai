@@ -1,7 +1,7 @@
 PY ?= .venv/bin/python
 UV ?= uv
 
-.PHONY: install dev worker test lint fmt migrate seed hash-password import-sales check-stock import-assortment
+.PHONY: install dev worker test lint fmt migrate seed hash-password import-sales check-stock import-assortment replenish pricing
 
 install:
 	$(UV) venv --python 3.12 .venv
@@ -42,3 +42,9 @@ check-stock:
 # Usage: make import-assortment XLSX=path/to/P4_ducan_model.xlsx
 import-assortment:
 	$(PY) -m ducan.jobs.cli import-assortment "$(XLSX)"
+
+replenish:
+	$(PY) -m ducan.jobs.cli replenish
+
+pricing:
+	$(PY) -m ducan.jobs.cli pricing

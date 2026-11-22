@@ -8,12 +8,24 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.middleware.sessions import SessionMiddleware
 
+from ducan.actions import executors
 from ducan.auth.security import SESSION_MAX_AGE, LoginRequired, LoginThrottle
 from ducan.brand import load_brand
 from ducan.config import AppConfig, get_config
 from ducan.db import make_engine, make_sessionmaker
 from ducan.web.deps import STATIC_DIR, make_templates
-from ducan.web.routes import actions, audit, auth, dashboard, products, pwa, sales, stock, suppliers
+from ducan.web.routes import (
+    actions,
+    audit,
+    auth,
+    competitors,
+    dashboard,
+    products,
+    pwa,
+    sales,
+    stock,
+    suppliers,
+)
 
 
 def create_app(
@@ -24,6 +36,7 @@ def create_app(
     app = FastAPI(title="Dućan AI", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.config = config
     app.state.brand = load_brand(config.env.brand_dir)
+    executors.configure(config, app.state.brand)
     app.state.sessionmaker = session_factory or make_sessionmaker(
         make_engine(config.env.database_url)
     )
@@ -60,6 +73,17 @@ def create_app(
         return RedirectResponse("/login", status_code=303)
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-    for module in (auth, dashboard, products, suppliers, stock, sales, actions, audit, pwa):
+    for module in (
+        auth,
+        dashboard,
+        products,
+        suppliers,
+        stock,
+        sales,
+        actions,
+        competitors,
+        audit,
+        pwa,
+    ):
         app.include_router(module.router)
     return app

@@ -154,3 +154,77 @@ def test_manifest_and_security_headers(client):
     response = client.get("/manifest.webmanifest")
     assert response.json()["lang"] == "hr"
     assert "default-src 'self'" in response.headers["content-security-policy"]
+
+
+def test_dashboard_with_sales_and_jobs(logged_in, factory, app_config):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from ducan.replenishment.job import run_replenishment
+    from tests.conftest import add_daily_sales
+
+    today = datetime.now(ZoneInfo("Europe/Zagreb")).date()
+    with factory() as s:
+        from ducan.models import Supplier
+
+        s.get(Supplier, 1).min_order_net = None  # the real date decides the delivery horizon
+        add_daily_sales(s, "P4-0001", "15", 28, today, price="1.20")
+        run_replenishment(s, app_config, today)
+        s.commit()
+    page = logged_in.get("/").text
+    assert "Što naručiti danas" in page and "Prodaja po danima" in page
+    assert "Test Dobavljač d.o.o.: " in page
+    assert "<svg" in page and "18,00 €" in page  # one day of water sales
+
+
+def test_competitor_price_entry(logged_in, factory):
+    page = logged_in.get("/konkurencija").text
+    response = logged_in.post(
+        "/konkurencija",
+        data={
+            "csrf_token": csrf_from(page),
+            "sku": "P4-0002",
+            "competitor": "Market A",
+            "price_gross": "14,49",
+            "observed_on": "2026-11-01",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert "Market A" in logged_in.get("/konkurencija").text
+    bad = logged_in.post(
+        "/konkurencija",
+        data={
+            "csrf_token": csrf_from(page),
+            "sku": "P4-0002",
+            "competitor": "",
+            "price_gross": "-1",
+            "observed_on": "2099-01-01",
+        },
+    )
+    assert bad.status_code == 422
+
+
+def test_order_documents_and_receiving_via_ui(logged_in, factory, app_config):
+    from datetime import date
+
+    from ducan.replenishment.job import run_replenishment
+    from tests.conftest import add_daily_sales
+
+    today = date(2026, 11, 18)
+    with factory() as s:
+        add_daily_sales(s, "P4-0001", "15", 28, today)
+        run = run_replenishment(s, app_config, today)
+        s.commit()
+        order_id = run.summary["proposed"][0]
+    csv_response = logged_in.get(f"/akcije/{order_id}/narudzba.csv")
+    assert csv_response.status_code == 200 and b"P4-0001" in csv_response.content
+    page = logged_in.get("/akcije").text
+    token = csrf_from(page)
+    logged_in.post(f"/akcije/{order_id}/odobri", data={"csrf_token": token})
+    response = logged_in.post(
+        f"/akcije/{order_id}/primka",
+        headers={"HX-Request": "true", "X-CSRF-Token": token},
+        data={"qty_P4-0001": "129"},
+    )
+    assert "Roba je zaprimljena" in response.text

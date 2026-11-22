@@ -16,7 +16,14 @@ from sqlalchemy.pool import StaticPool
 
 import ducan.models  # noqa: F401
 from ducan.auth.security import hash_password
-from ducan.config import AppConfig, BusinessConfig, EnvSettings, LowRisk, SpendingCaps
+from ducan.config import (
+    AppConfig,
+    BusinessConfig,
+    EnvSettings,
+    LowRisk,
+    ShopInfo,
+    SpendingCaps,
+)
 from ducan.db import Base
 from ducan.models import Product, StockLevel, Supplier
 
@@ -35,6 +42,7 @@ def business() -> BusinessConfig:
             review_reply_min_stars=4,
         ),
         vat_rates=[Decimal("5"), Decimal("13"), Decimal("25")],
+        shop=ShopInfo(address="Vladimira Gortana 9, Mali Lošinj (P4)"),
     )
 
 
@@ -108,6 +116,44 @@ def catalog(session: Session) -> Session:
     )
     session.commit()
     return session
+
+
+def add_daily_sales(
+    session: Session, sku: str, per_day: str, days: int, today=None, price: str = "1.00"
+) -> None:
+    """Record ``per_day`` units of ``sku`` at noon on each of the ``days`` days before today."""
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+
+    from ducan.models import Sale, SalesImport
+
+    today = today or NOW.astimezone(ZoneInfo("Europe/Zagreb")).date()
+    imp = SalesImport(source="test", filename=f"{sku}-{days}", file_sha256=f"{sku}{days}{per_day}")
+    session.add(imp)
+    session.flush()
+    for offset in range(1, days + 1):
+        day = today - timedelta(days=offset)
+        ts = datetime(day.year, day.month, day.day, 12, tzinfo=ZoneInfo("Europe/Zagreb"))
+        session.add(
+            Sale(
+                ts=ts,
+                sku=sku,
+                quantity=Decimal(per_day),
+                gross_amount=Decimal(per_day) * Decimal(price),
+                payment_method="card",
+                import_id=imp.id,
+            )
+        )
+    session.flush()
+
+
+@pytest.fixture(autouse=True)
+def _reset_executors() -> Iterator[None]:
+    from ducan.actions import executors
+
+    executors.reset()
+    yield
+    executors.reset()
 
 
 def write_brand(brand_dir: Path) -> None:

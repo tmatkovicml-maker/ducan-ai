@@ -35,6 +35,15 @@ class EnvSettings(BaseSettings):
     cookie_secure: bool = True
     anthropic_api_key: str | None = None
     anthropic_model: str | None = None
+    anthropic_refusal_fallback: str | None = None
+    anthropic_effort: str | None = None
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str | None = None
+    smtp_starttls: bool = True
+    pdf_font_path: Path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 
     @field_validator("secret_key")
     @classmethod
@@ -73,6 +82,55 @@ class PosConfig(BaseModel):
     poll_minutes: int = Field(default=15, ge=1)
 
 
+class ShopInfo(BaseModel):
+    """Shop details confirmed by the owner."""
+
+    name: str | None = None
+    address: str | None = None
+
+
+class Replenishment(BaseModel):
+    """Forecast and ordering parameters."""
+
+    weight_14d: Decimal = Decimal("0.6")
+    weight_28d: Decimal = Decimal("0.4")
+    min_history_days: int = Field(default=7, ge=1)
+    cover_days: int = Field(default=3, ge=0)
+
+
+class DemandPrior(BaseModel):
+    """Demand estimate used before enough sales history exists."""
+
+    expected_daily_revenue_gross: Decimal | None = None
+
+
+class PricePointTier(BaseModel):
+    """Allowed cent endings for prices up to ``up_to`` EUR (None = no limit)."""
+
+    up_to: Decimal | None
+    endings: list[Decimal]
+
+
+class Pricing(BaseModel):
+    """Weekly pricing rules."""
+
+    default_floor_margin_pct: Decimal | None = None
+    category_floor_margin_pct: dict[str, Decimal] = Field(default_factory=dict)
+    competitor_gap_pct: Decimal = Decimal("10")
+    competitor_max_age_days: int = 30
+    price_points: list[PricePointTier] = Field(default_factory=list)
+
+    def floor_for(self, category: str) -> Decimal | None:
+        """Floor margin for a category, falling back to the default."""
+        return self.category_floor_margin_pct.get(category, self.default_floor_margin_pct)
+
+
+class Dashboard(BaseModel):
+    """Dashboard settings."""
+
+    expiry_warning_days: int = 7
+
+
 class BusinessConfig(BaseModel):
     """Business rules loaded from ``settings.yaml``."""
 
@@ -82,6 +140,16 @@ class BusinessConfig(BaseModel):
     low_risk: LowRisk
     vat_rates: list[Decimal]
     pos: PosConfig = PosConfig()
+    shop: ShopInfo = ShopInfo()
+    replenishment: Replenishment = Replenishment()
+    seasonality: dict[int, Decimal] = Field(default_factory=dict)
+    demand_prior: DemandPrior = DemandPrior()
+    pricing: Pricing = Pricing()
+    dashboard: Dashboard = Dashboard()
+
+    def season_factor(self, month: int) -> Decimal:
+        """Seasonal factor for a month (1 when not configured)."""
+        return self.seasonality.get(month, Decimal("1"))
 
 
 def load_business_config(config_dir: Path) -> BusinessConfig:

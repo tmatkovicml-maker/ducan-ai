@@ -9,7 +9,12 @@
   {% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
   {% if action.error %}<p class="errors">{{ action.error }}</p>{% endif %}
   {% if action.reasoning_summary %}<p>{{ action.reasoning_summary }}</p>{% endif %}
-  {% if action.payload.get("draft_text") %}<pre>{{ action.payload.draft_text }}</pre>{% endif %}
+  {% if action.payload.get("draft_text") %}
+  {% if action.payload.get("subject") %}<p><strong>Predmet:</strong> {{ action.payload.subject }}</p>{% endif %}
+  <pre>{{ action.payload.draft_text }}</pre>{% endif %}
+  {% if action.type == "purchase_order" %}
+  <div class="row"><a class="btn ghost" href="/akcije/{{ action.id }}/narudzba.pdf">Narudžbenica PDF</a><a class="btn ghost" href="/akcije/{{ action.id }}/narudzba.csv">CSV</a></div>
+  {% endif %}
   {% if action.payload.get("warnings") %}<ul class="unknown">{% for w in action.payload.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
   <details><summary>Podaci i reference</summary><pre>{{ action.payload|tojson(indent=2) }}</pre><pre>{{ action.references|tojson(indent=2) }}</pre><pre>{{ action.data_used|tojson(indent=2) }}</pre></details>
   <p class="muted">Predložio: {{ action.proposed_by }} · {{ action.created_at|dt }}{% if action.decided_at %} · odlučio: {{ action.decided_by }} {{ action.decided_at|dt }}{% endif %}{% if action.executed_at %} · izvršeno {{ action.executed_at|dt }}{% endif %}</p>
@@ -27,6 +32,17 @@
     <button class="danger" type="submit">Poništi</button>
   </form>
   {% elif action.status == "approved" %}
-  <p class="muted">Odobreno. Izvršitelj za ovu vrstu akcije još nije uključen.</p>
+  <p class="muted">{% if action.type == "purchase_order" %}Odobreno. Slanje e-mailom nije uključeno (SMTP nije postavljen): preuzmi narudžbenicu i pošalji je dobavljaču sam.{% else %}Odobreno. Izvršitelj za ovu vrstu akcije još nije uključen.{% endif %}</p>
+  {% endif %}
+  {% if action.type == "purchase_order" and action.status in ("approved", "executed") %}
+    {% if action.payload.get("received") %}<p class="ok-msg">Roba je zaprimljena.</p>
+    {% else %}
+    <form method="post" action="/akcije/{{ action.id }}/primka" hx-post="/akcije/{{ action.id }}/primka" hx-target="#action-{{ action.id }}" hx-swap="outerHTML" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <strong>Primka: zaprimljene količine</strong>
+      <div class="fields">{% for l in action.payload.lines %}<label>{{ l.sku }} (naručeno {{ l.quantity }}) <input name="qty_{{ l.sku }}" value="{{ l.quantity }}" inputmode="decimal"></label>{% endfor %}</div>
+      <div><button type="submit">Zaprimi robu</button></div>
+    </form>
+    {% endif %}
   {% endif %}
 </div>

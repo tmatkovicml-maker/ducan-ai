@@ -8,7 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 from ducan.config import get_config
 from ducan.db import make_engine, make_sessionmaker
-from ducan.jobs.tasks import check_stock, import_sales
+from ducan.jobs.tasks import check_stock, import_sales, pricing, replenish
 
 log = logging.getLogger("ducan.worker")
 
@@ -34,6 +34,28 @@ def build_scheduler() -> BlockingScheduler:
         minute=10,
         args=[factory],
         id="check_stock",
+        max_instances=1,
+        coalesce=True,
+    )
+    # After the evening POS export has been imported.
+    scheduler.add_job(
+        replenish,
+        "cron",
+        hour=2,
+        minute=30,
+        args=[config, factory],
+        id="replenishment",
+        max_instances=1,
+        coalesce=True,
+    )
+    scheduler.add_job(
+        pricing,
+        "cron",
+        day_of_week="mon",
+        hour=3,
+        minute=30,
+        args=[config, factory],
+        id="pricing",
         max_instances=1,
         coalesce=True,
     )

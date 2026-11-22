@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Cijene konkurencije</h1>
+<p class="muted">Upisuješ ih ručno. Sustav ih ne prikuplja sam s interneta. Koriste se samo cijene novije od 30 dana.</p>
+{% include "_errors.html" %}
+<form method="post" action="/konkurencija" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="fields">
+    <label>Proizvod <select name="sku">{% for p in products.values() %}<option value="{{ p.sku }}">{{ p.name_hr }} ({{ p.sku }})</option>{% endfor %}</select></label>
+    <label>Konkurent <input name="competitor" required></label>
+    <label>Cijena s PDV-om (€) <input name="price_gross" inputmode="decimal" required></label>
+    <label>Datum <input type="date" name="observed_on" value="{{ today }}" required></label>
+  </div>
+  <label>Napomena <input name="note"></label>
+  <div><button type="submit">Dodaj</button></div>
+</form>
+<div class="card table-wrap">
+<table><tr><th>Datum</th><th>Proizvod</th><th>Konkurent</th><th class="num">Cijena</th><th class="num">Naša</th><th></th></tr>
+{% for r in rows %}{% set p = products.get(r.sku) %}
+<tr><td>{{ r.observed_on.strftime('%d.%m.%Y.') }}</td><td>{{ p.name_hr if p else r.sku }}</td><td>{{ r.competitor }}</td>
+<td class="num">{{ r.price_gross|money }}</td><td class="num">{{ (p.retail_price_gross if p else none)|money }}</td>
+<td><form method="post" action="/konkurencija/{{ r.id }}/obrisi"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="danger" type="submit">Obriši</button></form></td></tr>
+{% else %}<tr><td colspan="6" class="muted">Još nema upisanih cijena.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import select
@@ -13,8 +15,11 @@ from ducan.actions.executors.price_change import StaleProposal
 from ducan.actions.state_machine import InvalidTransition
 from ducan.auth.security import require_csrf, require_login
 from ducan.config import AppConfig
-from ducan.models import Action, ActionStatus
+from ducan.inventory.receiving import ReceivingError, receive_order
+from ducan.models import Action, ActionStatus, ActionType, Supplier
+from ducan.replenishment.documents import DocumentError, load_lines, order_csv, order_pdf
 from ducan.web.deps import get_config, get_session
+from ducan.web.routes._forms import FormError, dec
 
 router = APIRouter(prefix="/akcije")
 FILTERS = {
@@ -118,6 +123,79 @@ def roll_back(
         session.commit()  # keep the audit entry for the refused rollback
         return _respond(request, _load(session, action_id), str(exc))
     except (InvalidTransition, StaleProposal) as exc:
+        session.rollback()
+        return _respond(request, _load(session, action_id), str(exc))
+    session.commit()
+    return _respond(request, action)
+
+
+def _order(session: Session, action_id: int) -> Action:
+    action = _load(session, action_id)
+    if action.type != ActionType.PURCHASE_ORDER:
+        raise HTTPException(404, "Akcija nije narudžba.")
+    return action
+
+
+@router.get("/{action_id}/narudzba.pdf")
+def order_pdf_download(
+    action_id: int,
+    request: Request,
+    _actor: str = Depends(require_login),
+    session: Session = Depends(get_session),
+    config: AppConfig = Depends(get_config),
+) -> Response:
+    action = _order(session, action_id)
+    supplier = session.get(Supplier, action.payload["supplier_id"])
+    delivery = action.payload.get("delivery_date")
+    try:
+        pdf = order_pdf(
+            supplier,
+            load_lines(session, action.payload),
+            date.fromisoformat(delivery) if delivery else None,
+            config.business.shop,
+            request.app.state.brand,
+            config.env.pdf_font_path,
+            action.id,
+        )
+    except DocumentError as exc:
+        raise HTTPException(500, str(exc)) from exc
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="narudzba-{action.id}.pdf"'},
+    )
+
+
+@router.get("/{action_id}/narudzba.csv")
+def order_csv_download(
+    action_id: int,
+    _actor: str = Depends(require_login),
+    session: Session = Depends(get_session),
+) -> Response:
+    action = _order(session, action_id)
+    return Response(
+        order_csv(load_lines(session, action.payload)),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="narudzba-{action.id}.csv"'},
+    )
+
+
+@router.post("/{action_id}/primka", dependencies=[Depends(require_csrf)])
+async def receive(
+    action_id: int,
+    request: Request,
+    actor: str = Depends(require_login),
+    session: Session = Depends(get_session),
+) -> Response:
+    action = _order(session, action_id)
+    form = await request.form()
+    received = {}
+    try:
+        for key, value in form.items():
+            if key.startswith("qty_") and isinstance(value, str) and value.strip():
+                received[key.removeprefix("qty_")] = dec(value, key.removeprefix("qty_"))
+        receive_order(session, action, received, actor)
+    except (FormError, ReceivingError) as exc:
         session.rollback()
         return _respond(request, _load(session, action_id), str(exc))
     session.commit()

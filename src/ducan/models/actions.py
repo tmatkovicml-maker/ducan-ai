@@ -74,3 +74,6 @@ class AuditLog(Base):
     summary: Mapped[str] = mapped_column(Text, default="")
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     action_id: Mapped[int | None] = mapped_column(ForeignKey("actions.id"))
+    # Set on LLM calls only.
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)

@@ -16,10 +16,10 @@ from sqlalchemy.orm import Session
 from ducan.auth.security import csrf_token
 from ducan.comms.disclosure import DISCLOSURE_HR
 from ducan.config import AppConfig
+from ducan.formatting import UNKNOWN, fmt_money, fmt_num
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 STATIC_DIR = Path(__file__).parent / "static"
-UNKNOWN = "nepoznato"
 
 
 def get_session(request: Request) -> Iterator[Session]:
@@ -45,25 +45,6 @@ def _context(request: Request) -> dict[str, Any]:
     }
 
 
-def fmt_money(value: Decimal | None) -> str:
-    """Croatian money format: 1.234,50 €."""
-    if value is None:
-        return UNKNOWN
-    text = f"{value:,.2f}".replace(",", " ").replace(".", ",").replace(" ", ".")
-    return f"{text} €"
-
-
-def fmt_num(value: Decimal | int | None) -> str:
-    """Decimal with a comma and no trailing zeros."""
-    if value is None:
-        return UNKNOWN
-    dec = Decimal(value)
-    text = format(dec.normalize(), "f") if dec == dec.to_integral() else format(dec, "f")
-    if "." in text:
-        text = text.rstrip("0").rstrip(".")
-    return text.replace(".", ",")
-
-
 def make_templates(tz: str) -> Jinja2Templates:
     """Template environment with Croatian formatting filters."""
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR), context_processors=[_context])
@@ -75,5 +56,12 @@ def make_templates(tz: str) -> Jinja2Templates:
     def fmt_opt(value: Any) -> str:
         return UNKNOWN if value in (None, "") else str(value)
 
-    templates.env.filters.update(money=fmt_money, num=fmt_num, dt=fmt_dt, opt=fmt_opt)
+    def num_round(value: Decimal | None, places: int = 1) -> str:
+        if value is None:
+            return UNKNOWN
+        return f"{value:.{places}f}".replace(".", ",")
+
+    templates.env.filters.update(
+        money=fmt_money, num=fmt_num, dt=fmt_dt, opt=fmt_opt, num_round=num_round
+    )
     return templates

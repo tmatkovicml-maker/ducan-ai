@@ -19,6 +19,8 @@ def record(
     entity_id: str | int | None = None,
     details: dict[str, Any] | None = None,
     action_id: int | None = None,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
 ) -> AuditLog:
     """Append an audit entry to the session (the caller commits)."""
     entry = AuditLog(
@@ -29,6 +31,8 @@ def record(
         entity_id=None if entity_id is None else str(entity_id),
         details=details or {},
         action_id=action_id,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
     )
     session.add(entry)
     return entry

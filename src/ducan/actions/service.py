@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import select
@@ -21,7 +22,7 @@ from ducan.config import BusinessConfig
 from ducan.db import utcnow
 from ducan.models import Action, ActionStatus, ActionType
 from ducan.validation import ValidationResult
-from ducan.validation.caps import validate_purchase_order
+from ducan.validation.caps import parse_lines, validate_purchase_order
 from ducan.validation.price import validate_price_change
 from ducan.validation.references import Draft, Reference, validate_draft
 
@@ -51,7 +52,7 @@ def _validate(
     if action_type == ActionType.PURCHASE_ORDER:
         result.extend(validate_purchase_order(session, payload, config, now, exclude_action_id))
     if action_type == ActionType.PRICE_CHANGE:
-        result.extend(validate_price_change(session, payload))
+        result.extend(validate_price_change(session, payload, config.pricing))
     text = payload.get("draft_text")
     if text is not None:
         try:
@@ -59,8 +60,33 @@ def _validate(
         except (KeyError, TypeError):
             result.errors.append("Reference nacrta nisu ispravnog oblika.")
         else:
-            result.extend(validate_draft(session, Draft(text=text, references=refs)))
+            money, qty = _computed_values(action_type, payload)
+            result.extend(validate_draft(session, Draft(text=text, references=refs), money, qty))
     return result
+
+
+def _computed_values(
+    action_type: ActionType, payload: dict[str, Any]
+) -> tuple[set[Decimal], set[Decimal]]:
+    """Amounts and quantities derived by code from the payload, allowed in its draft."""
+    money: set[Decimal] = set()
+    qty: set[Decimal] = set()
+    if action_type == ActionType.PURCHASE_ORDER:
+        try:
+            lines = parse_lines(payload)
+        except ValueError:
+            return money, qty
+        for line in lines:
+            money.update({line.unit_price_net, line.total_net})
+            qty.add(line.quantity)
+        money.add(sum((line.total_net for line in lines), Decimal("0")))
+    if action_type == ActionType.PRICE_CHANGE:
+        for key in ("old_retail_price_gross", "new_retail_price_gross"):
+            if key in payload:
+                money.add(Decimal(str(payload[key])))
+        for value in payload.get("evidence_amounts", []):
+            money.add(Decimal(str(value)))
+    return money, qty
 
 
 def propose(

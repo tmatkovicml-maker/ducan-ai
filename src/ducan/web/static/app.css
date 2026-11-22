@@ -67,3 +67,11 @@ td:first-child { white-space: nowrap; }
   nav { order: 3; flex: 1 0 100%; overflow-x: auto; flex-wrap: nowrap; }
   nav a { white-space: nowrap; }
 }
+.chart-wrap { overflow-x: auto; }
+svg.chart { width: 100%; min-width: 320px; height: auto; display: block; }
+svg.chart .bar { fill: var(--accent); }
+svg.chart .hit { fill: transparent; }
+svg.chart .hit:hover + .bar, svg.chart .bar:hover { opacity: .8; }
+svg.chart .axis { stroke: var(--line); stroke-width: 1; }
+svg.chart .tick { fill: var(--muted); font-size: 9px; }
+td.num { white-space: nowrap; }

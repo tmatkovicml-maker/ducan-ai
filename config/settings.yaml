@@ -27,3 +27,64 @@ vat_rates: [5, 13, 25]
 pos:
   adapter: csv
   poll_minutes: 15
+
+# Shop details used in supplier emails and order sheets. Only what the owner confirmed.
+shop:
+  # TODO(owner): the shop's public name. Emails use the address only until it is set.
+  name: null
+  address: "Vladimira Gortana 9, Mali Lošinj (P4)"
+
+# Nightly replenishment.
+replenishment:
+  # Weights of the 14- and 28-day average daily sales.
+  weight_14d: 0.6
+  weight_28d: 0.4
+  # Days of sales history needed before history is trusted on its own.
+  min_history_days: 7
+  # Extra days of stock to have on hand after the next-but-one delivery.
+  # TODO(owner): confirm. 3 days is a starting point, not a business decision.
+  cover_days: 3
+
+# Simple seasonal factor per month (1 = average month). Used as
+# forecast = sales_rate * factor(target month) / factor(current month).
+# TODO(owner): set from experience (e.g. July much higher than February). All 1.0 = no seasonality.
+seasonality:
+  1: 1.0
+  2: 1.0
+  3: 1.0
+  4: 1.0
+  5: 1.0
+  6: 1.0
+  7: 1.0
+  8: 1.0
+  9: 1.0
+  10: 1.0
+  11: 1.0
+  12: 1.0
+
+# Until there is enough sales history, demand can be estimated from each product's
+# "share of sales" (from the assortment sheet) and an expected daily turnover.
+demand_prior:
+  # TODO(owner): expected average daily turnover in EUR incl. VAT. null = no estimate.
+  expected_daily_revenue_gross: null
+
+# Weekly pricing.
+pricing:
+  # Minimum gross margin in percent of the net selling price.
+  # TODO(owner): set. While null, the pricing job proposes nothing.
+  default_floor_margin_pct: null
+  # Optional per-category floors, e.g. {"Pića": 30, "Suveniri": 50}.
+  category_floor_margin_pct: {}
+  # Propose a decrease only if we are this many percent above the cheapest
+  # competitor price you entered (and the floor margin still holds).
+  competitor_gap_pct: 10
+  # Competitor prices older than this many days are ignored.
+  competitor_max_age_days: 30
+  # Allowed price endings by price range (EUR incl. VAT). Prices are rounded to these.
+  price_points:
+    - {up_to: 5, endings: [0.09, 0.19, 0.29, 0.39, 0.49, 0.59, 0.69, 0.79, 0.89, 0.99]}
+    - {up_to: 20, endings: [0.49, 0.99]}
+    - {up_to: null, endings: [0.90]}
+
+dashboard:
+  expiry_warning_days: 7
