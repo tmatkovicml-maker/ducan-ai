@@ -1,0 +1,29 @@
+# Business rules for Dućan AI. Secrets do NOT belong here (use .env).
+timezone: Europe/Zagreb
+currency: EUR
+
+# Hard spending caps for purchase orders, in EUR, NET (excl. VAT).
+# Orders above a cap are BLOCKED, not merely flagged.
+# TODO(owner): set real values. While a cap is 0, every purchase order is blocked.
+spending_caps:
+  per_order_net: 0
+  per_week_net: 0
+
+# What "approve all low-risk" may approve in one tap.
+# null means "never low-risk". shift_schedule, customer_message and social_post
+# are never low-risk, and neither is a first order with a new supplier.
+low_risk:
+  # TODO(owner): e.g. 150 -> orders up to 150 EUR net count as low-risk.
+  purchase_order_max_net: null
+  # TODO(owner): e.g. 5 -> price changes up to +/-5 % count as low-risk.
+  price_change_max_pct: null
+  # Replies to reviews with at least this many stars are low-risk.
+  review_reply_min_stars: 4
+
+# VAT rates the system accepts on products, in percent.
+# TO BE VERIFIED with the accountant (see docs/compliance-checklist.md).
+vat_rates: [5, 13, 25]
+
+pos:
+  adapter: csv
+  poll_minutes: 15

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row"><h1 class="grow">Proizvodi</h1><a class="btn" href="/proizvodi/novi">Novi proizvod</a></div>
+<div class="card table-wrap">
+<table>
+<tr><th>SKU</th><th>Proizvod</th><th>Kategorija</th><th class="num">Nabavna (neto)</th><th class="num">MPC</th><th class="num">PDV</th><th class="num">Zaliha</th><th>Status</th></tr>
+{% for p in products %}
+<tr>
+  <td><a href="/proizvodi/{{ p.sku }}">{{ p.sku }}</a></td>
+  <td>{{ p.name_hr }}<br><span class="muted">{{ p.unit }}</span></td>
+  <td>{{ p.category }}</td>
+  <td class="num {{ 'unknown' if p.purchase_price_net is none }}">{{ p.purchase_price_net|money }}</td>
+  <td class="num {{ 'unknown' if p.retail_price_gross is none }}">{{ p.retail_price_gross|money }}</td>
+  <td class="num {{ 'unknown' if p.vat_rate is none }}">{% if p.vat_rate is not none %}{{ p.vat_rate|num }} %{% else %}nepoznato{% endif %}</td>
+  <td class="num">{{ levels.get(p.sku)|num }}</td>
+  <td>{% if p.active %}<span class="pill executed">aktivan</span>{% else %}<span class="pill">neaktivan</span>{% endif %}</td>
+</tr>
+{% else %}
+<tr><td colspan="8" class="muted">Nema proizvoda. Učitaj ih s <code>make seed</code> ili dodaj ručno.</td></tr>
+{% endfor %}
+</table>
+</div>
+{% endblock %}

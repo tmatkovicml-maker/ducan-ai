@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Zalihe</h1>
+{% include "_errors.html" %}
+{% if message %}<p class="ok-msg">{{ message }}</p>{% endif %}
+{% if differences is not none %}
+<div class="card table-wrap"><h2>Rezultat inventure</h2>
+<table><tr><th>SKU</th><th class="num">Sustav</th><th class="num">Prebrojano</th><th class="num">Razlika</th></tr>
+{% for d in differences %}<tr><td>{{ d.sku }}</td><td class="num">{{ d.system|num }}</td><td class="num">{{ d.counted|num }}</td><td class="num">{{ d.delta|num }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% if integrity is not none %}
+<div class="card">
+  <h2>Provjera dosljednosti</h2>
+  {% if integrity %}<div class="errors"><ul>{% for i in integrity %}<li>{{ i.sku }}: stanje {{ i.level|num }}, zbroj kretanja {{ i.movements_sum|num }}</li>{% endfor %}</ul></div>
+  {% else %}<p class="ok-msg">Sva stanja odgovaraju zbroju kretanja.</p>{% endif %}
+</div>
+{% endif %}
+
+<form method="post" action="/zalihe/inventura" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <h2>Stanje i inventura</h2>
+  <p class="muted">Upiši prebrojanu količinu samo za proizvode koje si prebrojao. Razlike se knjiže kao korekcija s razlogom.</p>
+  <div class="table-wrap"><table>
+    <tr><th>SKU</th><th>Proizvod</th><th class="num">Sustav</th><th class="num">Min / max</th><th>Zadnja inventura</th><th>Prebrojano</th></tr>
+    {% for p in products %}{% set lvl = levels.get(p.sku) %}
+    <tr>
+      <td>{{ p.sku }}</td><td>{{ p.name_hr }}</td>
+      <td class="num">{{ (lvl.quantity if lvl else none)|num }}</td>
+      <td class="num">{{ p.min_stock|num }} / {{ p.max_stock|num }}</td>
+      <td>{{ (lvl.last_counted_at if lvl else none)|dt }}</td>
+      <td><input class="count" name="count_{{ p.sku }}" inputmode="decimal" aria-label="Prebrojano {{ p.name_hr }}"></td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  <label>Napomena <input name="note"></label>
+  <div><button type="submit">Spremi inventuru</button></div>
+</form>
+
+<form method="post" action="/zalihe/korekcija" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <h2>Ručna korekcija</h2>
+  <div class="fields">
+    <label>Proizvod <select name="sku">{% for p in products %}<option value="{{ p.sku }}">{{ p.sku }} · {{ p.name_hr }}</option>{% endfor %}</select></label>
+    <label>Promjena (+ primka, − otpis) <input name="delta" inputmode="decimal" required></label>
+    <label>Razlog <input name="reason" required></label>
+  </div>
+  <div><button type="submit">Zabilježi</button></div>
+</form>
+
+<div class="card">
+  <div class="row"><h2 class="grow">Zadnja kretanja</h2>
+  <form method="post" action="/zalihe/provjera"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="ghost" type="submit">Provjeri dosljednost</button></form></div>
+  <div class="table-wrap"><table><tr><th>Vrijeme</th><th>SKU</th><th class="num">Promjena</th><th>Vrsta</th><th>Razlog</th><th>Tko</th></tr>
+  {% for m in movements %}<tr><td>{{ m.created_at|dt }}</td><td>{{ m.sku }}</td><td class="num">{{ m.delta|num }}</td><td>{{ {"sale": "prodaja", "receipt": "primka", "count_adjustment": "inventura", "manual_adjustment": "korekcija"}[m.kind] }}</td><td>{{ m.reason|opt }}</td><td>{{ m.created_by }}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">Još nema kretanja.</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

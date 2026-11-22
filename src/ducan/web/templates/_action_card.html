@@ -1,0 +1,32 @@
+{% set labels = {"purchase_order": "Narudžba", "price_change": "Promjena cijene", "shift_schedule": "Raspored smjena", "social_post": "Objava", "review_reply": "Odgovor na recenziju", "customer_message": "Poruka kupcu"} %}
+{% set statuses = {"proposed": "čeka odobrenje", "approved": "odobreno", "rejected": "odbijeno", "executed": "izvršeno", "failed": "neuspjelo", "rolled_back": "poništeno"} %}
+<div class="card action" id="action-{{ action.id }}">
+  <div class="row">
+    <strong class="grow">#{{ action.id }} · {{ labels.get(action.type, action.type) }}: {{ action.title }}</strong>
+    <span class="pill {{ action.status }}">{{ statuses[action.status] }}</span>
+    <span class="pill {{ action.risk }}">{{ "nizak rizik" if action.risk == "low" else "provjeri" }}</span>
+  </div>
+  {% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+  {% if action.error %}<p class="errors">{{ action.error }}</p>{% endif %}
+  {% if action.reasoning_summary %}<p>{{ action.reasoning_summary }}</p>{% endif %}
+  {% if action.payload.get("draft_text") %}<pre>{{ action.payload.draft_text }}</pre>{% endif %}
+  {% if action.payload.get("warnings") %}<ul class="unknown">{% for w in action.payload.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+  <details><summary>Podaci i reference</summary><pre>{{ action.payload|tojson(indent=2) }}</pre><pre>{{ action.references|tojson(indent=2) }}</pre><pre>{{ action.data_used|tojson(indent=2) }}</pre></details>
+  <p class="muted">Predložio: {{ action.proposed_by }} · {{ action.created_at|dt }}{% if action.decided_at %} · odlučio: {{ action.decided_by }} {{ action.decided_at|dt }}{% endif %}{% if action.executed_at %} · izvršeno {{ action.executed_at|dt }}{% endif %}</p>
+  {% if action.status == "proposed" %}
+  <div class="row">
+    <form method="post" action="/akcije/{{ action.id }}/odobri" hx-post="/akcije/{{ action.id }}/odobri" hx-target="#action-{{ action.id }}" hx-swap="outerHTML"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Odobri</button></form>
+    <form method="post" action="/akcije/{{ action.id }}/odbij" hx-post="/akcije/{{ action.id }}/odbij" hx-target="#action-{{ action.id }}" hx-swap="outerHTML"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="danger" type="submit">Odbij</button></form>
+  </div>
+  {% elif action.status == "failed" %}
+  <form method="post" action="/akcije/{{ action.id }}/odbij" hx-post="/akcije/{{ action.id }}/odbij" hx-target="#action-{{ action.id }}" hx-swap="outerHTML"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="danger" type="submit">Zatvori kao odbijeno</button></form>
+  {% elif action.status == "executed" %}
+  <form method="post" action="/akcije/{{ action.id }}/ponisti" hx-post="/akcije/{{ action.id }}/ponisti" hx-target="#action-{{ action.id }}" hx-swap="outerHTML" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input name="reason" placeholder="Razlog poništenja" required class="grow">
+    <button class="danger" type="submit">Poništi</button>
+  </form>
+  {% elif action.status == "approved" %}
+  <p class="muted">Odobreno. Izvršitelj za ovu vrstu akcije još nije uključen.</p>
+  {% endif %}
+</div>

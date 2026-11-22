@@ -1,0 +1,36 @@
+sku,name_hr,category,unit,vat_rate,supplier_id,purchase_price_net,retail_price_gross,min_stock,max_stock,shelf_life_days,sales_share_pct,active
+P4-0001,"Prirodna mineralna voda 0,5 l",Pića,boca,,,,,,,,,false
+P4-0002,"Prirodna mineralna voda 1,5 l",Pića,boca,,,,,,,,,false
+P4-0003,"Gazirana mineralna voda 0,5 l",Pića,boca,,,,,,,,,false
+P4-0004,"Gazirani sok 0,33 l",Pića,limenka,,,,,,,,,false
+P4-0005,"Gazirani sok 0,5 l",Pića,boca,,,,,,,,,false
+P4-0006,"Ledeni čaj 0,5 l",Pića,boca,,,,,,,,,false
+P4-0007,"Voćni sok 0,2 l",Pića,tetrapak,,,,,,,,,false
+P4-0008,"Energetski napitak 0,25 l",Pića,limenka,,,,,,,,,false
+P4-0009,"Pivo 0,5 l",Pića,limenka,,,,,,,,,false
+P4-0010,"Vino domaće 0,75 l",Pića,boca,,,,,,,,,false
+P4-0011,Sladoled na štapiću,Sladoled i led,kom,,,,,,,,,false
+P4-0012,Led u vrećici 2 kg,Sladoled i led,vrećica,,,,,,,,,false
+P4-0013,Čips 150 g,Grickalice i slatkiši,vrećica,,,,,,,,,false
+P4-0014,Čokolada 100 g,Grickalice i slatkiši,kom,,,,,,,,,false
+P4-0015,Keksi 200 g,Grickalice i slatkiši,pakiranje,,,,,,,,,false
+P4-0016,Žvakaće gume,Grickalice i slatkiši,pakiranje,,,,,,,,,false
+P4-0017,Kruh,Osnovne namirnice,kom,,,,,,,,,false
+P4-0018,Mlijeko 1 l,Osnovne namirnice,tetrapak,,,,,,,,,false
+P4-0019,"Jogurt 0,5 l",Osnovne namirnice,boca,,,,,,,,,false
+P4-0020,Kava mljevena 250 g,Osnovne namirnice,pakiranje,,,,,,,,,false
+P4-0021,"Maslinovo ulje 0,5 l",Lokalni proizvodi,boca,,,,,,,,,false
+P4-0022,Med 450 g,Lokalni proizvodi,staklenka,,,,,,,,,false
+P4-0023,Lavanda u vrećici,Lokalni proizvodi,kom,,,,,,,,,false
+P4-0024,Smokve suhe 200 g,Lokalni proizvodi,pakiranje,,,,,,,,,false
+P4-0025,Morska sol 500 g,Lokalni proizvodi,pakiranje,,,,,,,,,false
+P4-0026,Krema za sunčanje SPF 30,Plaža,kom,,,,,,,,,false
+P4-0027,Krema za sunčanje SPF 50,Plaža,kom,,,,,,,,,false
+P4-0028,Ručnik za plažu,Plaža,kom,,,,,,,,,false
+P4-0029,Papuče za more,Plaža,par,,,,,,,,,false
+P4-0030,Razglednica,Suveniri,kom,,,,,,,,,false
+P4-0031,Magnet,Suveniri,kom,,,,,,,,,false
+P4-0032,Platnena torba,Suveniri,kom,,,,,,,,,false
+P4-0033,Vlažne maramice,Higijena i ostalo,pakiranje,,,,,,,,,false
+P4-0034,Toaletni papir 4 kom,Higijena i ostalo,pakiranje,,,,,,,,,false
+P4-0035,Baterije AA 4 kom,Higijena i ostalo,pakiranje,,,,,,,,,false

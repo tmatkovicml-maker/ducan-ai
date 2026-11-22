@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Odobrenja</h1>
+<div class="row">
+  {% for key, _ in filters.items() %}<a class="btn {{ '' if filter == key else 'ghost' }}" href="/akcije?status={{ key }}">{{ {"na-cekanju": "Na čekanju", "odobreno": "Odobreno", "izvrseno": "Izvršeno", "zavrseno": "Završeno"}[key] }}</a>{% endfor %}
+</div>
+{% if filter == "na-cekanju" and low_risk %}
+<form method="post" action="/akcije/odobri-niski-rizik" class="card row">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <span class="grow">{{ low_risk }} prijedloga niskog rizika.</span>
+  <button type="submit">Odobri sve niskog rizika</button>
+</form>
+{% endif %}
+{% for action in actions %}{% include "_action_card.html" %}{% else %}
+<p class="muted card">Nema akcija u ovom popisu. Agent počinje predlagati narudžbe i cijene u Fazi 2.</p>
+{% endfor %}
+{% endblock %}

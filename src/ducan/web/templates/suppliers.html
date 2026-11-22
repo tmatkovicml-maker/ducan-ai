@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row"><h1 class="grow">Dobavljači</h1><a class="btn" href="/dobavljaci/novi">Novi dobavljač</a></div>
+<div class="card table-wrap">
+<table>
+<tr><th>Naziv</th><th>Kontakt</th><th class="num">Rok isporuke</th><th class="num">Min. narudžba</th><th>Dani dostave</th><th>Plaćanje</th></tr>
+{% for s in suppliers %}
+<tr>
+  <td><a href="/dobavljaci/{{ s.id }}">{{ s.name }}</a>{% if not s.active %} <span class="pill">neaktivan</span>{% endif %}</td>
+  <td>{{ s.contact_name|opt }}<br><span class="muted">{{ s.email|opt }} · {{ s.phone|opt }}</span></td>
+  <td class="num">{% if s.lead_time_days is not none %}{{ s.lead_time_days }} d{% else %}<span class="unknown">nepoznato</span>{% endif %}</td>
+  <td class="num {{ 'unknown' if s.min_order_net is none }}">{{ s.min_order_net|money }}</td>
+  <td class="{{ 'unknown' if not s.delivery_days }}">{{ s.delivery_days|opt }}</td>
+  <td class="{{ 'unknown' if not s.payment_terms }}">{{ s.payment_terms|opt }}</td>
+</tr>
+{% else %}
+<tr><td colspan="6" class="muted">Još nema dobavljača.</td></tr>
+{% endfor %}
+</table>
+</div>
+{% endblock %}

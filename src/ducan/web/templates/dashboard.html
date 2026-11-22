@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Početna</h1>
+<div class="grid">
+  <a class="card stat plain" href="/akcije"><b>{{ pending }}</b>prijedloga čeka odobrenje</a>
+  <div class="card stat"><b>{{ below_min|length }}</b>aktivnih proizvoda ispod minimalne zalihe</div>
+  <a class="card stat plain" href="/proizvodi"><b>{{ incomplete_count }}</b>od {{ product_count }} proizvoda je neaktivno (nedostaju podaci)</a>
+  <a class="card stat plain" href="/prodaja"><b>{{ last_import.imported_at|dt if last_import else "—" }}</b>zadnji uvoz prodaje</a>
+</div>
+{% if below_min %}
+<div class="card"><h2>Ispod minimalne zalihe</h2>
+<div class="table-wrap"><table><tr><th>SKU</th><th>Proizvod</th><th class="num">Zaliha</th><th class="num">Minimum</th></tr>
+{% for p, q in below_min %}<tr><td>{{ p.sku }}</td><td>{{ p.name_hr }}</td><td class="num">{{ q|num }}</td><td class="num">{{ p.min_stock|num }}</td></tr>{% endfor %}
+</table></div></div>
+{% endif %}
+<p class="muted">Prodaja po danima i kategorijama, marža, pokrivenost zalihe i „što naručiti danas“ dolaze u Fazi 2.</p>
+{% endblock %}

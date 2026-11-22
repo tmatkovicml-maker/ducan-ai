@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dnevnik (audit)</h1>
+<div class="card table-wrap">
+<table><tr><th>Vrijeme</th><th>Tko</th><th>Događaj</th><th>Opis</th><th>Detalji</th></tr>
+{% for e in entries %}
+<tr><td>{{ e.ts|dt }}</td><td>{{ e.actor }}</td><td><code>{{ e.event }}</code>{% if e.entity_id %}<br><span class="muted">{{ e.entity_type }} {{ e.entity_id }}</span>{% endif %}</td><td>{{ e.summary }}</td>
+<td>{% if e.details %}<details><summary>prikaži</summary><pre class="wrap">{{ e.details|tojson(indent=2) }}</pre></details>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Dnevnik je prazan.</td></tr>{% endfor %}
+</table></div>
+<div class="row">{% if page > 1 %}<a class="btn ghost" href="/audit?page={{ page - 1 }}">Novije</a>{% endif %}{% if has_next %}<a class="btn ghost" href="/audit?page={{ page + 1 }}">Starije</a>{% endif %}</div>
+{% endblock %}
