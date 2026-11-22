@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Recenzije</h1>
+{% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+<p class="muted">Zalijepi recenziju s Googlea. AI predloži kratak, topao odgovor bez obećanja koja nisi dao. Odgovor odobriš pod Odobrenja i zalijepiš ga na Google.</p>
+<form method="post" action="/recenzije" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label>Tekst recenzije <textarea name="text" rows="4" required maxlength="4000"></textarea></label>
+  <div class="fields">
+    <label>Ocjena <select name="stars">{% for s in [5,4,3,2,1] %}<option value="{{ s }}">{{ s }} ★</option>{% endfor %}</select></label>
+    <label>Jezik recenzije <select name="language">{% for l in languages %}<option value="{{ l }}">{{ l|upper }}</option>{% endfor %}</select></label>
+    <label>Ime autora (neobavezno) <input name="author_name" maxlength="100"></label>
+    <label>Datum (neobavezno) <input type="date" name="review_date"></label>
+  </div>
+  <div><button type="submit">Spremi i pripremi odgovor</button></div>
+</form>
+<div class="card table-wrap">
+<table><tr><th>Ocjena</th><th>Recenzija</th><th>Odgovor</th><th></th></tr>
+{% for r in reviews %}
+<tr><td class="nowrap">{{ r.stars }} ★ <span class="muted">{{ r.language|upper }}</span></td><td>{{ r.text[:200] }}{% if r.text|length > 200 %}…{% endif %}{% if r.author_name %}<br><span class="muted">{{ r.author_name }}</span>{% endif %}</td>
+<td>{% if r.action_id %}<a href="/akcije">prijedlog #{{ r.action_id }}</a>{% else %}<form method="post" action="/recenzije/{{ r.id }}/pripremi"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="ghost" type="submit">Pripremi</button></form>{% endif %}</td>
+<td><form method="post" action="/recenzije/{{ r.id }}/obrisi"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="danger" type="submit">Obriši</button></form></td></tr>
+{% else %}<tr><td colspan="4" class="muted">Još nema recenzija.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

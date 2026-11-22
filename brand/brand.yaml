@@ -1,0 +1,27 @@
+# Single source of brand assets. The system only uses files listed here.
+# Each file needs its sha256 (sha256sum brand/<file>), so a changed file fails loudly.
+#
+# TODO(owner): no logo, colors or fonts yet. Until they exist, the admin UI shows a
+# plain text header. Example entry once a logo exists:
+#
+# files:
+#   logo_svg:
+#     path: logo.svg
+#     sha256: <output of: sha256sum brand/logo.svg>
+#   logo_png:
+#     path: logo.png
+#     sha256: ...
+#   icon_192:       # PWA icon, 192x192 PNG
+#     path: icon-192.png
+#     sha256: ...
+#   icon_512:       # PWA icon, 512x512 PNG
+#     path: icon-512.png
+#     sha256: ...
+#   tone_of_voice:
+#     path: tone-of-voice.md
+#     sha256: ...
+# TODO(owner): the shop's public name. Empty until confirmed.
+name: null
+colors: {}
+fonts: {}
+files: {}

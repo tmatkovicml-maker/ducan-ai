@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Raspored</h1>
+{% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+{% if message %}<p class="ok-msg">{{ message }}</p>{% endif %}
+{% if missing_rules %}<div class="errors"><strong>Raspored se ne može složiti.</strong> U <code>config/labour.yaml</code> nedostaju zakonske vrijednosti: {{ missing_rules|join(", ") }}. Upiši ih nakon provjere s računovođom.</div>{% endif %}
+{% if no_seasons %}<div class="errors">Radno vrijeme nije upisano u <code>config/opening_hours.yaml</code>.</div>{% endif %}
+
+<section class="card row">
+  <span class="grow">Sljedeći tjedan (od {{ next_week.strftime('%d.%m.') }}):
+  {% if next_rota %}<a href="/akcije">#{{ next_rota.id }} {{ next_rota.title }}</a> ({{ {"proposed": "čeka odobrenje", "approved": "odobreno", "executed": "objavljeno"}[next_rota.status] }}){% else %}<strong>još nema prijedloga</strong> (rok: četvrtak u podne){% endif %}</span>
+  {% if not next_rota %}<form method="post" action="/raspored/predlozi"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Predloži raspored</button></form>{% endif %}
+</section>
+
+<div class="row">
+  <a class="btn ghost" href="/raspored?tjedan={{ prev.isoformat() }}">← Prethodni</a>
+  <strong class="grow">Tjedan od {{ week.strftime('%d.%m.%Y.') }}</strong>
+  <a class="btn ghost" href="/raspored?tjedan={{ next.isoformat() }}">Sljedeći →</a>
+</div>
+<div class="card table-wrap">
+<table><tr><th>Dan</th><th>Smjene</th></tr>
+{% for day, name, shifts in days %}
+<tr><td>{{ name }} {{ day.strftime('%d.%m.') }}</td><td>{% for s in shifts %}<div>{{ s.start.strftime('%H:%M') }}–{{ s.end.strftime('%H:%M') }} {{ staff[s.staff_id].name }}{% if s.break_minutes %} <span class="muted">(stanka {{ s.break_minutes }} min)</span>{% endif %}</div>{% else %}<span class="muted">—</span>{% endfor %}</td></tr>
+{% endfor %}
+</table></div>
+
+<section class="card">
+  <h2>Zahtjevi za zamjenu</h2>
+  {% for sw, shift, problems in swap_rows %}
+  <div class="stack">
+    <p><strong>{{ staff[sw.from_staff_id].name }} → {{ staff[sw.to_staff_id].name }}</strong>: {{ shift.day.strftime('%d.%m.') }} {{ shift.start.strftime('%H:%M') }}–{{ shift.end.strftime('%H:%M') }}{% if sw.reason %}<br><span class="muted">{{ sw.reason }}</span>{% endif %}</p>
+    {% if problems %}<ul class="unknown">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>{% else %}<p class="ok-msg">Zamjena poštuje sva pravila.</p>{% endif %}
+    <form method="post" action="/raspored/zamjena/{{ sw.id }}" class="row">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input name="napomena" placeholder="Napomena (neobavezno)" class="grow">
+      {% if not problems %}<button type="submit" name="odluka" value="odobri">Odobri</button>{% endif %}
+      <button class="danger" type="submit" name="odluka" value="odbij">Odbij</button>
+    </form>
+  </div>
+  {% else %}<p class="muted">Nema otvorenih zahtjeva.</p>{% endfor %}
+</section>
+{% endblock %}

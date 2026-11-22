@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if supplier %}{{ supplier.name }}{% else %}Novi dobavljač{% endif %}</h1>
+{% include "_errors.html" %}
+<form method="post" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="fields">
+    <label>Naziv <input name="name" value="{{ values.name or '' }}" required></label>
+    <label>Kontakt osoba <input name="contact_name" value="{{ values.contact_name or '' }}"></label>
+    <label>E-mail <input type="email" name="email" value="{{ values.email or '' }}"></label>
+    <label>Telefon <input name="phone" value="{{ values.phone or '' }}"></label>
+    <label>Rok isporuke (dana) <input name="lead_time_days" inputmode="numeric" value="{{ values.lead_time_days if values.lead_time_days is not none else '' }}"></label>
+    <label>Minimalna narudžba bez PDV-a (€) <input name="min_order_net" inputmode="decimal" value="{{ values.min_order_net if values.min_order_net is not none else '' }}"></label>
+    <label>Dani dostave (1 = pon … 7 = ned, npr. 2,5) <input name="delivery_days" value="{{ values.delivery_days or '' }}"></label>
+    <label>Uvjeti plaćanja <input name="payment_terms" value="{{ values.payment_terms or '' }}"></label>
+  </div>
+  <label>Napomene <textarea name="notes" rows="3">{{ values.notes or '' }}</textarea></label>
+  <label class="check"><input type="checkbox" name="active" {{ 'checked' if values.active }}> Aktivan</label>
+  <div class="row"><button type="submit">Spremi</button><a class="btn ghost" href="/dobavljaci">Odustani</a></div>
+</form>
+{% endblock %}

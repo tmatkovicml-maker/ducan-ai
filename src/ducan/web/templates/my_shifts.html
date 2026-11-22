@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Moje smjene{% endblock %}
+{% block content %}
+<h1>Bok {{ staff.name }}</h1>
+{% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+{% if message %}<p class="ok-msg">{{ message }}</p>{% endif %}
+<section class="card table-wrap">
+  <h2>Tvoje smjene (sljedeća 3 tjedna)</h2>
+  <table><tr><th>Dan</th><th>Vrijeme</th></tr>
+  {% for s in shifts %}<tr><td>{{ s.day.strftime('%d.%m.%Y.') }}</td><td>{{ s.start.strftime('%H:%M') }}–{{ s.end.strftime('%H:%M') }}{% if s.break_minutes %} (stanka {{ s.break_minutes }} min){% endif %}</td></tr>
+  {% else %}<tr><td colspan="2" class="muted">Nema smjena.</td></tr>{% endfor %}
+  </table>
+</section>
+{% if shifts and colleagues %}
+<form method="post" action="/smjene/{{ token }}/zamjena" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <h2>Zamoli zamjenu</h2>
+  <div class="fields">
+    <label>Smjena <select name="shift_id">{% for s in shifts %}<option value="{{ s.id }}">{{ s.day.strftime('%d.%m.') }} {{ s.start.strftime('%H:%M') }}–{{ s.end.strftime('%H:%M') }}</option>{% endfor %}</select></label>
+    <label>Tko preuzima <select name="to_staff_id">{% for c in colleagues %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></label>
+  </div>
+  <label>Razlog (neobavezno) <input name="reason" maxlength="500"></label>
+  <p class="muted">Dogovori se prvo s kolegom ili kolegicom. Vlasnik odobrava zamjenu, a sustav provjerava pravila o radnom vremenu.</p>
+  <div><button type="submit">Pošalji zahtjev</button></div>
+</form>
+{% endif %}
+{% if pending %}<p class="muted">Otvoreni zahtjevi: {{ pending|length }}</p>{% endif %}
+{% endblock %}

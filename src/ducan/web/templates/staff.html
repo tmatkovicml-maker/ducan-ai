@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row"><h1 class="grow">Osoblje</h1><a class="btn" href="/osoblje/novi">Dodaj osobu</a></div>
+<p class="muted">Sustav sprema samo ono što treba za raspored: ime, e-mail, ulogu, najviše sati i dostupnost. Ne prati rad ni ponašanje zaposlenika.</p>
+<div class="card table-wrap">
+<table><tr><th>Ime</th><th>Uloga</th>{% for d, label in days %}<th>{{ label[:3] }}</th>{% endfor %}</tr>
+{% for s in staff %}{% set g = grids[s.id] %}
+<tr><td><a href="/osoblje/{{ s.id }}">{{ s.name }}</a>{% if not s.active %} <span class="pill">neaktivan</span>{% endif %}<br><span class="muted">{{ s.email|opt }}</span></td><td>{{ s.role }}</td>
+{% for d, label in days %}<td>{% if g.get(d) %}{{ g[d].start.strftime('%H:%M') }}–{{ g[d].end.strftime('%H:%M') }}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}</tr>
+{% else %}<tr><td colspan="9" class="muted">Još nema osoblja.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

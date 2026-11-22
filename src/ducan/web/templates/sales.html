@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Prodaja</h1>
+{% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+{% if outcomes is not none %}
+<div class="card"><h2>Rezultat uvoza</h2>
+{% for o in outcomes %}<p>{{ o.name }}: {% if o.status == "imported" %}uvezeno {{ o.rows_ok }}, odbijeno {{ o.rows_rejected }}{% elif o.status == "duplicate" %}već uvezeno, preskočeno{% else %}odbijeno: {{ o.message }}{% endif %}</p>
+{% else %}<p class="muted">U ulaznoj mapi nema novih datoteka.</p>{% endfor %}
+</div>
+{% endif %}
+<div class="grid">
+  <form method="post" action="/prodaja/ucitaj" enctype="multipart/form-data" class="card stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <h2>Učitaj CSV iz blagajne</h2>
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <div><button type="submit">Uvezi</button></div>
+    <p class="muted">Stupci: timestamp, sku, quantity, gross_amount, payment_method. Ostali stupci se ne spremaju.</p>
+  </form>
+  <form method="post" action="/prodaja/obradi" class="card stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <h2>Ulazna mapa</h2>
+    <p class="muted">Datoteke iz mape <code>data/pos_inbox</code> obrađuju se automatski. Ovdje ih možeš obraditi odmah.</p>
+    <div><button class="ghost" type="submit">Obradi sada</button></div>
+  </form>
+</div>
+<div class="card table-wrap"><h2>Uvozi</h2>
+<table><tr><th>Vrijeme</th><th>Datoteka</th><th class="num">Uvezeno</th><th class="num">Odbijeno</th><th>Greške</th></tr>
+{% for i in imports %}<tr><td>{{ i.imported_at|dt }}</td><td>{{ i.filename }}</td><td class="num">{{ i.rows_ok }}</td><td class="num">{{ i.rows_rejected }}</td>
+<td>{% if i.errors %}<details><summary>{{ i.errors|length }}</summary><ul>{% for e in i.errors %}<li>redak {{ e.row }}: {{ e.error }}</li>{% endfor %}</ul></details>{% else %}—{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Još nema uvoza.</td></tr>{% endfor %}
+</table></div>
+<div class="card table-wrap"><h2>Zadnja prodaja</h2>
+<table><tr><th>Vrijeme</th><th>SKU</th><th class="num">Količina</th><th class="num">Iznos</th><th>Plaćanje</th></tr>
+{% for s in sales %}<tr><td>{{ s.ts|dt }}</td><td>{{ s.sku }}</td><td class="num">{{ s.quantity|num }}</td><td class="num">{{ s.gross_amount|money }}</td><td>{{ {"cash": "gotovina", "card": "kartica", "other": "ostalo"}[s.payment_method] }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Još nema prodaje.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

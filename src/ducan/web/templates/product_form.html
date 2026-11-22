@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if product %}{{ product.sku }} · {{ product.name_hr }}{% else %}Novi proizvod{% endif %}</h1>
+{% include "_errors.html" %}
+<form method="post" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="fields">
+    {% if not product %}<label>SKU <input name="sku" value="{{ values.sku or '' }}" required></label>{% endif %}
+    <label>Naziv <input name="name_hr" value="{{ values.name_hr or '' }}" required></label>
+    <label>Kategorija <input name="category" value="{{ values.category or '' }}" required></label>
+    <label>Jedinica <input name="unit" value="{{ values.unit or '' }}" required></label>
+    <label>PDV (%) <input name="vat_rate" inputmode="decimal" value="{{ values.vat_rate if values.vat_rate is not none else '' }}"></label>
+    <label>Dobavljač
+      <select name="supplier_id"><option value="">— nepoznato —</option>
+      {% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if values.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}
+      </select></label>
+    <label>Nabavna cijena bez PDV-a (€) <input name="purchase_price_net" inputmode="decimal" value="{{ values.purchase_price_net if values.purchase_price_net is not none else '' }}"></label>
+    <label>Maloprodajna cijena s PDV-om (€) <input name="retail_price_gross" inputmode="decimal" value="{{ values.retail_price_gross if values.retail_price_gross is not none else '' }}"></label>
+    <label>Minimalna zaliha <input name="min_stock" inputmode="decimal" value="{{ values.min_stock if values.min_stock is not none else '' }}"></label>
+    <label>Maksimalna zaliha <input name="max_stock" inputmode="decimal" value="{{ values.max_stock if values.max_stock is not none else '' }}"></label>
+    <label>Rok trajanja (dana) <input name="shelf_life_days" inputmode="numeric" value="{{ values.shelf_life_days if values.shelf_life_days is not none else '' }}"></label>
+    <label>Udio u prodaji (%) <input name="sales_share_pct" inputmode="decimal" value="{{ values.sales_share_pct if values.sales_share_pct is not none else '' }}"></label>
+  </div>
+  <label class="check"><input type="checkbox" name="active" {{ 'checked' if values.active }}> Aktivan (potrebni PDV, nabavna i maloprodajna cijena)</label>
+  <p class="muted">Prazna polja znače „nepoznato“. Sustav ih nikad ne popunjava pretpostavkama.</p>
+  <div class="row"><button type="submit">Spremi</button><a class="btn ghost" href="/proizvodi">Odustani</a></div>
+</form>
+{% if history %}
+<div class="card table-wrap"><h2>Povijest cijena</h2>
+<table><tr><th>Vrijeme</th><th>Polje</th><th class="num">Staro</th><th class="num">Novo</th><th>Tko</th><th>Razlog</th></tr>
+{% for h in history %}<tr><td>{{ h.changed_at|dt }}</td><td>{{ "nabavna" if h.field == "purchase_price_net" else "maloprodajna" }}</td><td class="num">{{ h.old_value|money }}</td><td class="num">{{ h.new_value|money }}</td><td>{{ h.changed_by }}</td><td>{{ h.reason|opt }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

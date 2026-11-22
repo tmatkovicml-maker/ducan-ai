@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Početna</h1>
+{% if rota_alert %}<p class="errors" role="alert">{{ rota_alert }} <a href="/raspored">Otvori raspored</a></p>{% endif %}
+<div class="grid">
+  <a class="card stat plain" href="/akcije"><b>{{ pending }}</b>prijedloga čeka odobrenje</a>
+  <div class="card stat"><b>{{ total_gross|money }}</b>prodaja zadnjih {{ window_days }} dana (s PDV-om)</div>
+  <a class="card stat plain" href="/proizvodi"><b>{{ inactive_count }}</b>neaktivnih proizvoda (nedostaju podaci)</a>
+  <a class="card stat plain" href="/prodaja"><b>{{ last_import.imported_at|dt if last_import else "—" }}</b>zadnji uvoz prodaje</a>
+</div>
+
+<section class="card">
+  <h2>Što naručiti danas</h2>
+  {% if pending_orders %}
+  <ul>{% for a in pending_orders %}<li><a href="/akcije">#{{ a.id }} {{ a.title }}</a></li>{% endfor %}</ul>
+  {% endif %}
+  {% if replenishment %}
+    {% for o in replenishment.summary.get("to_order", []) if not o.proposable %}
+    <p>{{ o.supplier }} (nije predloženo): {% for l in o.lines %}{{ l.sku }} {{ l.quantity }}{{ ", " if not loop.last }}{% endfor %}</p>
+    {% endfor %}
+    {% if not pending_orders and not replenishment.summary.get("to_order") %}<p class="muted">Ništa ne treba naručiti.</p>{% endif %}
+    {% if replenishment.summary.get("flags") %}
+    <details open><summary>Treba tvoj unos ({{ replenishment.summary.flags|length }})</summary>
+      <ul class="unknown">{% for f in replenishment.summary.flags %}<li>{{ f }}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+    <p class="muted">Zadnji izračun: {{ replenishment.started_at|dt }}</p>
+  {% else %}
+    <p class="muted">Noćni izračun nabave još nije pokrenut.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Prodaja po danima (s PDV-om)</h2>
+  {% set w = 12 %}{% set h = 120 %}
+  <div class="chart-wrap">
+  <svg class="chart" viewBox="0 0 {{ days|length * w }} {{ h }}" preserveAspectRatio="none" role="img" aria-label="Prodaja po danima, zadnjih {{ window_days }} dana">
+    <line class="axis" x1="0" y1="{{ h }}" x2="{{ days|length * w }}" y2="{{ h }}"></line>
+    {% for d in days %}
+      {% set bh = ((d.gross / peak * (h - 10)) if peak > 0 else 0)|float %}
+      <rect class="bar" x="{{ loop.index0 * w + 1 }}" y="{{ h - bh }}" width="{{ w - 2 }}" height="{{ bh }}" rx="2"><title>{{ d.day.strftime('%d.%m.') }}: {{ d.gross|money }}</title></rect>
+      <rect class="hit" x="{{ loop.index0 * w }}" y="0" width="{{ w }}" height="{{ h }}"><title>{{ d.day.strftime('%d.%m.') }}: {{ d.gross|money }}</title></rect>
+    {% endfor %}
+  </svg>
+  <div class="ticks"><span>{{ days[0].day.strftime('%d.%m.') }}</span><span>{{ days[-1].day.strftime('%d.%m.') }}</span></div>
+  </div>
+  <p class="muted">Najveći dan: {{ peak|money }}. Prijeđi preko stupca za iznos.</p>
+  <details><summary>Tablica</summary>
+  <div class="table-wrap"><table><tr><th>Dan</th><th class="num">Prodaja</th></tr>
+  {% for d in days|reverse %}<tr><td>{{ d.day.strftime('%d.%m.%Y.') }}</td><td class="num">{{ d.gross|money }}</td></tr>{% endfor %}
+  </table></div></details>
+</section>
+
+<section class="card table-wrap">
+  <h2>Kategorije i marža ({{ window_days }} dana)</h2>
+  <table><tr><th>Kategorija</th><th class="num">Prodaja s PDV-om</th><th class="num">Bez PDV-a</th><th class="num">Nabavna vrijednost</th><th class="num">Marža</th></tr>
+  {% for c in categories %}
+  <tr><td>{{ c.category }}</td><td class="num">{{ c.gross|money }}</td><td class="num">{{ c.net|money }}</td><td class="num">{{ c.cost|money }}</td>
+  <td class="num">{{ c.margin|money }}{% if c.margin_pct is not none %} ({{ c.margin_pct|num_round }} %){% endif %}{% if c.cost_unknown %} <span class="unknown">*</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Još nema prodaje.</td></tr>{% endfor %}
+  </table>
+  <p class="muted">Marža je procjena prema trenutnoj nabavnoj cijeni. * dio proizvoda nema PDV ili nabavnu cijenu.</p>
+</section>
+
+<div class="grid wide">
+<section class="card table-wrap">
+  <h2>Pokrivenost zalihe</h2>
+  <table><tr><th>Proizvod</th><th class="num">Zaliha</th><th class="num">Prodaja/dan</th><th class="num">Dana</th></tr>
+  {% for r in cover %}<tr><td>{{ r.product.sku }} {{ r.product.name_hr }}</td><td class="num">{{ r.stock|num }}</td>
+  <td class="num">{{ r.per_day|num_round(2) if r.per_day is not none else "nepoznato" }}</td>
+  <td class="num {{ 'unknown' if r.cover_days is none }}">{{ r.cover_days|num_round if r.cover_days is not none else "—" }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">Nema aktivnih proizvoda.</td></tr>{% endfor %}
+  </table>
+</section>
+<section class="card table-wrap">
+  <h2>Rok trajanja uskoro</h2>
+  <table><tr><th>Proizvod</th><th class="num">Količina</th><th>Istječe</th></tr>
+  {% for e in expiring %}<tr><td>{{ e.product.sku }} {{ e.product.name_hr }}</td><td class="num">{{ e.quantity|num }}</td><td>{{ e.expires_on.strftime('%d.%m.%Y.') }}</td></tr>
+  {% else %}<tr><td colspan="3" class="muted">Ništa ne istječe uskoro (prema primkama).</td></tr>{% endfor %}
+  </table>
+  <p class="muted">Procjena po primkama (prvo ulazi, prvo izlazi); serije se ne prate.</p>
+</section>
+</div>
+
+{% if pricing and pricing.summary.get("flags") %}
+<section class="card"><h2>Cijene: treba tvoj unos</h2>
+<ul class="unknown">{% for f in pricing.summary.flags[:10] %}<li>{{ f }}</li>{% endfor %}</ul>
+{% if pricing.summary.flags|length > 10 %}<p class="muted">… i još {{ pricing.summary.flags|length - 10 }}.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}
