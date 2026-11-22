@@ -12,6 +12,12 @@
   {% if action.payload.get("draft_text") %}
   {% if action.payload.get("subject") %}<p><strong>Predmet:</strong> {{ action.payload.subject }}</p>{% endif %}
   <pre>{{ action.payload.draft_text }}</pre>{% endif %}
+  {% if action.type == "shift_schedule" %}
+  <div class="table-wrap"><table><tr><th>Dan</th><th>Smjena</th><th>Tko i zašto</th></tr>
+  {% for s in action.payload.shifts %}<tr><td>{{ s.day|hrday }}</td><td>{{ s.start }}–{{ s.end }}{% if s.break_minutes %}<br><span class="muted">stanka {{ s.break_minutes }} min</span>{% endif %}</td><td><strong>{{ s.staff_name }}</strong><br><span class="muted">{{ s.why }}</span></td></tr>{% endfor %}
+  {% for g in action.payload.gaps %}<tr class="unknown"><td>{{ g.day|hrday }}</td><td>{{ g.start }}–{{ g.end }}</td><td>Nepokriveno: {{ g.why }}</td></tr>{% endfor %}
+  </table></div>
+  {% endif %}
   {% if action.type == "purchase_order" %}
   <div class="row"><a class="btn ghost" href="/akcije/{{ action.id }}/narudzba.pdf">Narudžbenica PDF</a><a class="btn ghost" href="/akcije/{{ action.id }}/narudzba.csv">CSV</a></div>
   {% endif %}

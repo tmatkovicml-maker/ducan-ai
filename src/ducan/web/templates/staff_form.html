@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if staff %}{{ staff.name }}{% else %}Nova osoba{% endif %}</h1>
+{% include "_errors.html" %}
+<form method="post" class="card stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="fields">
+    <label>Ime <input name="name" value="{{ values.name or '' }}" required></label>
+    <label>E-mail (za raspored) <input type="email" name="email" value="{{ values.email or '' }}"></label>
+    <label>Uloga <select name="role">{% for key, label in roles %}<option value="{{ key }}" {{ 'selected' if values.role == key }}>{{ label }}</option>{% endfor %}</select></label>
+    <label>Osobni maksimum sati tjedno (ugovor) <input name="max_hours_week" inputmode="decimal" value="{{ values.max_hours_week if values.max_hours_week is not none else '' }}"></label>
+  </div>
+  <h2>Dostupnost po danima</h2>
+  <p class="muted">Kada osoba može raditi. Prazno = taj dan ne radi.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Dan</th><th>Od</th><th>Do</th></tr>
+    {% for d, label in days %}{% set g = grid.get(d) %}
+    <tr><td>{{ label }}</td>
+      <td><input type="time" name="from_{{ d }}" value="{{ g[0] if g else '' }}" aria-label="{{ label }} od"></td>
+      <td><input type="time" name="to_{{ d }}" value="{{ g[1] if g else '' }}" aria-label="{{ label }} do"></td></tr>
+    {% endfor %}
+  </table></div>
+  <label class="check"><input type="checkbox" name="active" {{ 'checked' if values.active }}> Aktivan/na</label>
+  <div class="row"><button type="submit">Spremi</button><a class="btn ghost" href="/osoblje">Odustani</a></div>
+</form>
+{% endblock %}

@@ -12,11 +12,20 @@ import argparse
 import sys
 from pathlib import Path
 
+from ducan.actions import executors
+from ducan.brand import load_brand
 from ducan.config import get_config
 from ducan.db import make_engine, make_sessionmaker
 from ducan.importers.assortment_xlsx import merge_into_csv
 from ducan.importers.seed import SeedError, seed_database
-from ducan.jobs.tasks import check_stock, import_sales, pricing, replenish
+from ducan.jobs.tasks import (
+    check_stock,
+    import_sales,
+    pricing,
+    replenish,
+    rota,
+    rota_deadline,
+)
 
 SEED_DIR = Path("seed")
 
@@ -29,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("check-stock", help="Check stock levels against movements")
     sub.add_parser("replenish", help="Run the nightly replenishment now")
     sub.add_parser("pricing", help="Run the weekly pricing now")
+    sub.add_parser("rota", help="Propose next week's rota now")
+    sub.add_parser("rota-deadline", help="Run the Thursday rota check now")
     xlsx = sub.add_parser("import-assortment", help="Merge the 'Asortiman' sheet into products.csv")
     xlsx.add_argument("xlsx", type=Path)
     args = parser.parse_args(argv)
@@ -40,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
 
     config = get_config()
     factory = make_sessionmaker(make_engine(config.env.database_url))
+    executors.configure(config, load_brand(config.env.brand_dir))
     if args.command == "seed":
         with factory() as session:
             try:
@@ -61,8 +73,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{issue.sku}: stanje {issue.level}, zbroj kretanja {issue.movements_sum}")
         print("U redu." if not issues else f"{len(issues)} neusklađenih.")
         return 1 if issues else 0
-    elif args.command in ("replenish", "pricing"):
-        run = (replenish if args.command == "replenish" else pricing)(config, factory)
+    elif args.command in ("replenish", "pricing", "rota", "rota-deadline"):
+        job = {
+            "replenish": replenish,
+            "pricing": pricing,
+            "rota": rota,
+            "rota-deadline": rota_deadline,
+        }[args.command]
+        run = job(config, factory)
         print(f"Prijedlozi: {run.summary.get('proposed', [])}")
         for flag in run.summary.get("flags", []):
             print(f"- {flag}")

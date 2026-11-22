@@ -6,9 +6,18 @@ import logging
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 
+from ducan.actions import executors
+from ducan.brand import load_brand
 from ducan.config import get_config
 from ducan.db import make_engine, make_sessionmaker
-from ducan.jobs.tasks import check_stock, import_sales, pricing, replenish
+from ducan.jobs.tasks import (
+    check_stock,
+    import_sales,
+    pricing,
+    replenish,
+    rota,
+    rota_deadline,
+)
 
 log = logging.getLogger("ducan.worker")
 
@@ -17,6 +26,7 @@ def build_scheduler() -> BlockingScheduler:
     """Create the scheduler with every Phase 1 job registered."""
     config = get_config()
     factory = make_sessionmaker(make_engine(config.env.database_url))
+    executors.configure(config, load_brand(config.env.brand_dir))
     scheduler = BlockingScheduler(timezone=config.business.timezone)
     scheduler.add_job(
         import_sales,
@@ -56,6 +66,30 @@ def build_scheduler() -> BlockingScheduler:
         minute=30,
         args=[config, factory],
         id="pricing",
+        max_instances=1,
+        coalesce=True,
+    )
+    # Rota for next week on Monday, well before the Thursday deadline.
+    scheduler.add_job(
+        rota,
+        "cron",
+        day_of_week="mon",
+        hour=6,
+        minute=15,
+        args=[config, factory],
+        id="rota",
+        max_instances=1,
+        coalesce=True,
+    )
+    deadline = config.business.staffing.rota_deadline
+    scheduler.add_job(
+        rota_deadline,
+        "cron",
+        day_of_week=deadline.weekday,
+        hour=deadline.at.hour,
+        minute=deadline.at.minute,
+        args=[config, factory],
+        id="rota_deadline",
         max_instances=1,
         coalesce=True,
     )

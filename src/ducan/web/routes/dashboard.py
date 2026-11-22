@@ -74,5 +74,18 @@ def dashboard(
                 select(SalesImport).order_by(SalesImport.id.desc()).limit(1)
             ),
             "window_days": WINDOW_DAYS,
+            "rota_alert": _rota_alert(session, today),
         },
     )
+
+
+def _rota_alert(session: Session, today) -> str | None:
+    """Warning when next week's rota is missing after the deadline check ran."""
+    from ducan.scheduling.service import next_week_start, rota_for_week
+
+    run = latest_run(session, "rota_deadline")
+    if run is None or not run.summary.get("missing"):
+        return None
+    if rota_for_week(session, next_week_start(today)) is not None:
+        return None
+    return run.summary["flags"][0]

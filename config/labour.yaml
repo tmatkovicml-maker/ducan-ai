@@ -1,0 +1,23 @@
+# Labour-law limits for the weekly rota.
+#
+# TODO(owner): every value below is a LEGAL question. Fill them in only after checking
+# with your accountant or a labour lawyer (see docs/compliance-checklist.md, item 6).
+# While any value is null, the system does NOT generate a rota and the Thursday alert
+# reminds you that next week's rota is missing.
+
+# Longest shift a person may work in one day, in hours (break included).
+max_hours_per_day: null        # TODO(owner)
+
+# Most hours a person may work in one week (Mon-Sun).
+max_hours_per_week: null       # TODO(owner)
+
+# Minimum rest between the end of one shift and the start of the next, in hours.
+min_daily_rest_hours: null     # TODO(owner)
+
+# Minimum uninterrupted rest within each week (Mon 00:00 - Sun 24:00), in hours.
+min_weekly_rest_hours: null    # TODO(owner)
+
+# A shift longer than this many hours must include a break ...
+break_after_hours: null        # TODO(owner)
+# ... of at least this many minutes.
+break_minutes: null            # TODO(owner)

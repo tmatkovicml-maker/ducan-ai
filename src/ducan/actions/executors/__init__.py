@@ -1,9 +1,10 @@
 """Executors perform an approved action and, where possible, compensate it.
 
 Only types with a registered executor can be executed. ``price_change`` is
-always available; ``purchase_order`` is registered by :func:`configure` when
-SMTP is set up. Other types arrive with their phases. Without an executor an
-approved action simply stays "approved".
+always available; :func:`configure` adds ``shift_schedule`` (staff are emailed
+when SMTP is set up) and ``purchase_order`` (only when SMTP is set up). Other
+types arrive with their phases. Without an executor an approved action simply
+stays "approved".
 """
 
 from __future__ import annotations
@@ -45,9 +46,14 @@ def _defaults() -> dict[str, Executor]:
 def configure(config: AppConfig, brand: Brand) -> None:
     """(Re)build the registry for this process from its configuration."""
     from ducan.actions.executors.purchase_order import PurchaseOrderExecutor, SmtpMailer
+    from ducan.actions.executors.shift_schedule import ShiftScheduleExecutor
+    from ducan.comms.notify import make_notifier
 
     _registry.clear()
     _registry.update(_defaults())
+    _registry[ActionType.SHIFT_SCHEDULE] = ShiftScheduleExecutor(
+        make_notifier(config.env), config.env.public_base_url
+    )
     if config.env.smtp_host and config.env.smtp_from:
         _registry[ActionType.PURCHASE_ORDER] = PurchaseOrderExecutor(
             mailer=SmtpMailer(config.env), config=config, brand=brand

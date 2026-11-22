@@ -65,3 +65,24 @@ def pricing(config: AppConfig, factory: sessionmaker[Session]) -> JobRun:
         run = run_pricing(session, config, _today(config), agent=make_agent(config))
         session.commit()
         return run
+
+
+def rota(config: AppConfig, factory: sessionmaker[Session]) -> JobRun:
+    """Weekly: propose next week's rota."""
+    from ducan.scheduling.job import run_rota
+
+    with factory() as session:
+        run = run_rota(session, config, _today(config))
+        session.commit()
+        return run
+
+
+def rota_deadline(config: AppConfig, factory: sessionmaker[Session]) -> JobRun:
+    """At the deadline: alert the owner if next week's rota is missing."""
+    from ducan.comms.notify import make_notifier
+    from ducan.scheduling.job import check_rota_deadline
+
+    with factory() as session:
+        run = check_rota_deadline(session, config, _today(config), make_notifier(config.env))
+        session.commit()
+        return run

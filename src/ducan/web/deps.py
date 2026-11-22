@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -61,7 +61,11 @@ def make_templates(tz: str) -> Jinja2Templates:
             return UNKNOWN
         return f"{value:.{places}f}".replace(".", ",")
 
+    def hrday(value: str) -> str:
+        day = date.fromisoformat(value)
+        return f"{('Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned')[day.weekday()]} {day:%d.%m.}"
+
     templates.env.filters.update(
-        money=fmt_money, num=fmt_num, dt=fmt_dt, opt=fmt_opt, num_round=num_round
+        hrday=hrday, money=fmt_money, num=fmt_num, dt=fmt_dt, opt=fmt_opt, num_round=num_round
     )
     return templates

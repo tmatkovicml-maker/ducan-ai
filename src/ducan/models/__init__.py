@@ -7,6 +7,7 @@ from ducan.models.jobs import JobRun
 from ducan.models.pricing import CompetitorPrice
 from ducan.models.sales import PaymentMethod, Sale, SalesImport
 from ducan.models.settings import Setting
+from ducan.models.staff import Shift, Staff, StaffAvailability, SwapRequest
 
 __all__ = [
     "Action",
@@ -22,6 +23,10 @@ __all__ = [
     "Sale",
     "SalesImport",
     "Setting",
+    "Shift",
+    "Staff",
+    "StaffAvailability",
+    "SwapRequest",
     "StockLevel",
     "StockMovement",
     "Supplier",

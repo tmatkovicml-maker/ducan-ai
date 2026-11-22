@@ -20,9 +20,12 @@ from ducan.web.routes import (
     auth,
     competitors,
     dashboard,
+    my_shifts,
     products,
     pwa,
+    rota,
     sales,
+    staff,
     stock,
     suppliers,
 )
@@ -76,14 +79,17 @@ def create_app(
     for module in (
         auth,
         dashboard,
+        my_shifts,
         products,
         suppliers,
+        staff,
         stock,
         sales,
         actions,
         competitors,
         audit,
         pwa,
+        rota,
     ):
         app.include_router(module.router)
     return app

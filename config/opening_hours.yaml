@@ -1,0 +1,36 @@
+# Seasonal opening hours and staffing needs.
+#
+# TODO(owner): replace the example below with your real hours. Seasons are matched by
+# month-day; the first season that contains a date wins. Days not listed are closed.
+# min_staff = people needed in the shop whenever it is open. peaks add people for a
+# time window (e.g. lunch rush). Times are local, HH:MM.
+#
+# seasons:
+#   - name: Ljeto
+#     from: "06-15"
+#     to: "09-15"
+#     hours:
+#       mon: "07:00-22:00"
+#       tue: "07:00-22:00"
+#       wed: "07:00-22:00"
+#       thu: "07:00-22:00"
+#       fri: "07:00-22:00"
+#       sat: "07:00-22:00"
+#       sun: "08:00-20:00"
+#     min_staff: 1
+#     peaks:
+#       - {days: [mon, tue, wed, thu, fri, sat, sun], from: "10:00", to: "14:00", min_staff: 2}
+#   - name: Ostatak godine
+#     from: "09-16"
+#     to: "06-14"
+#     hours:
+#       mon: "07:00-20:00"
+#       ...
+#     min_staff: 1
+
+seasons: []
+
+# The rota for week N+1 must be proposed by this weekday/time of week N.
+rota_deadline:
+  weekday: thu
+  time: "12:00"

@@ -15,7 +15,7 @@
 <header class="top"><div class="in">
   <a class="brand" href="/">{% if brand.has("logo_svg") %}<img src="/brand/logo_svg" alt="{{ brand.name or 'Dućan AI' }}">{% else %}{{ brand.name or "Dućan AI" }}{% endif %}</a>
   <nav>
-    {% for href, label in [("/", "Početna"), ("/akcije", "Odobrenja"), ("/proizvodi", "Proizvodi"), ("/dobavljaci", "Dobavljači"), ("/zalihe", "Zalihe"), ("/prodaja", "Prodaja"), ("/konkurencija", "Konkurencija"), ("/audit", "Dnevnik")] %}
+    {% for href, label in [("/", "Početna"), ("/akcije", "Odobrenja"), ("/proizvodi", "Proizvodi"), ("/dobavljaci", "Dobavljači"), ("/zalihe", "Zalihe"), ("/raspored", "Raspored"), ("/osoblje", "Osoblje"), ("/prodaja", "Prodaja"), ("/konkurencija", "Konkurencija"), ("/audit", "Dnevnik")] %}
     <a href="{{ href }}" class="{{ 'on' if (path == href or (href != '/' and path.startswith(href))) else '' }}">{{ label }}</a>
     {% endfor %}
   </nav>

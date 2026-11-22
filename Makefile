@@ -1,7 +1,7 @@
 PY ?= .venv/bin/python
 UV ?= uv
 
-.PHONY: install dev worker test lint fmt migrate seed hash-password import-sales check-stock import-assortment replenish pricing
+.PHONY: install dev worker test lint fmt migrate seed hash-password import-sales check-stock import-assortment replenish pricing rota
 
 install:
 	$(UV) venv --python 3.12 .venv
@@ -48,3 +48,6 @@ replenish:
 
 pricing:
 	$(PY) -m ducan.jobs.cli pricing
+
+rota:
+	$(PY) -m ducan.jobs.cli rota

@@ -228,3 +228,81 @@ def test_order_documents_and_receiving_via_ui(logged_in, factory, app_config):
         data={"qty_P4-0001": "129"},
     )
     assert "Roba je zaprimljena" in response.text
+
+
+def test_staff_with_availability_grid(logged_in, factory):
+    from ducan.models import Staff, StaffAvailability
+
+    page = logged_in.get("/osoblje/novi").text
+    response = logged_in.post(
+        "/osoblje/novi",
+        data={
+            "csrf_token": csrf_from(page),
+            "name": "Ana",
+            "email": "ana@example.test",
+            "role": "zaposlenik",
+            "active": "on",
+            "from_1": "07:00",
+            "to_1": "15:00",
+            "from_6": "08:00",
+            "to_6": "20:00",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    with factory() as s:
+        staff = s.query(Staff).one()
+        days = {a.weekday for a in s.query(StaffAvailability).filter_by(staff_id=staff.id)}
+        assert days == {1, 6}
+    bad = logged_in.post(
+        "/osoblje/novi",
+        data={
+            "csrf_token": csrf_from(page),
+            "name": "X",
+            "role": "zaposlenik",
+            "from_2": "15:00",
+            "to_2": "07:00",
+        },
+    )
+    assert bad.status_code == 422 and "prije kraja" in bad.text
+
+
+def test_rota_page_shows_missing_rules(logged_in):
+    page = logged_in.get("/raspored").text
+    assert "Raspored se ne može složiti" in page and "max_hours_per_day" in page
+
+
+def test_personal_shift_page_needs_valid_token(client, factory):
+    from datetime import date, time, timedelta
+
+    from ducan.models import Shift, Staff
+    from ducan.scheduling.service import new_link_token
+
+    with factory() as s:
+        ana = Staff(name="Ana", role="zaposlenik")
+        ivo = Staff(name="Ivo", role="zaposlenik")
+        s.add_all([ana, ivo])
+        s.flush()
+        token = new_link_token(ana)
+        s.add(
+            Shift(
+                staff_id=ana.id, day=date.today() + timedelta(days=3), start=time(7), end=time(14)
+            )
+        )
+        s.commit()
+        ivo_id = ivo.id
+    assert client.get("/smjene/krivi-token").status_code == 404
+    page = client.get(f"/smjene/{token}")
+    assert page.status_code == 200 and "Bok Ana" in page.text
+    assert "Odobrenja" not in page.text  # no admin navigation without login
+    shift_id = int(page.text.split('<option value="')[1].split('"')[0])
+    response = client.post(
+        f"/smjene/{token}/zamjena",
+        data={
+            "csrf_token": csrf_from(page.text),
+            "shift_id": shift_id,
+            "to_staff_id": ivo_id,
+            "reason": "liječnik",
+        },
+    )
+    assert "Zahtjev je poslan" in response.text

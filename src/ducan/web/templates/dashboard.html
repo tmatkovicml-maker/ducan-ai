@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Početna</h1>
+{% if rota_alert %}<p class="errors" role="alert">{{ rota_alert }} <a href="/raspored">Otvori raspored</a></p>{% endif %}
 <div class="grid">
   <a class="card stat plain" href="/akcije"><b>{{ pending }}</b>prijedloga čeka odobrenje</a>
   <div class="card stat"><b>{{ total_gross|money }}</b>prodaja zadnjih {{ window_days }} dana (s PDV-om)</div>

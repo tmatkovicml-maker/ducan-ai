@@ -53,6 +53,10 @@ def _validate(
         result.extend(validate_purchase_order(session, payload, config, now, exclude_action_id))
     if action_type == ActionType.PRICE_CHANGE:
         result.extend(validate_price_change(session, payload, config.pricing))
+    if action_type == ActionType.SHIFT_SCHEDULE:
+        from ducan.scheduling.service import validate_rota
+
+        result.extend(validate_rota(session, payload, config))
     text = payload.get("draft_text")
     if text is not None:
         try:

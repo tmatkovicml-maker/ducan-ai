@@ -8,7 +8,7 @@ effects itself.
 All user-facing text is Croatian. Code, comments and docs are English, except
 `docs/compliance-checklist.md`, which is written for the owner and the accountant.
 
-Status: **Phase 2 (replenishment and pricing)**. See "What is built" below.
+Status: **Phase 3 (staff scheduling)**. See "What is built" below.
 
 ## Setup (local)
 
@@ -95,10 +95,14 @@ twice (sha256).
 ```bash
 make replenish    # nightly replenishment now: proposes purchase orders
 make pricing      # weekly pricing now: proposes price changes
+make rota         # propose next week's rota now
+.venv/bin/python -m ducan.jobs.cli rota-deadline   # run the Thursday check now
 ```
 
 Scheduled in the worker: `import_sales` (every `pos.poll_minutes`), `replenishment`
-(daily 02:30), `check_stock` (daily 03:10), `pricing` (Mondays 03:30). Jobs only ever
+(daily 02:30), `check_stock` (daily 03:10), `pricing` (Mondays 03:30), `rota`
+(Mondays 06:15, for the following week) and `rota_deadline` (Thursday 12:00, from
+`config/opening_hours.yaml`). Jobs only ever
 **propose**; every result lands in **Odobrenja**, and each run's notes for the owner
 ("Treba tvoj unos") are shown on the dashboard.
 
@@ -135,6 +139,28 @@ Only when a floor margin is configured (`pricing.default_floor_margin_pct` or pe
 New prices are rounded to `pricing.price_points`. The validator rejects any price change
 below the floor or off a price point. Nothing is scraped from the web.
 
+## Staff scheduling
+
+* **Osoblje**: name, email, role, optional personal weekly maximum and a weekly
+  availability grid (one window per weekday). Nothing else is stored about staff; there is
+  no monitoring of work or behaviour, and cameras are out of scope.
+* `config/opening_hours.yaml`: seasonal opening hours, people needed, peak windows.
+* `config/labour.yaml`: max hours per day and week, daily and weekly rest, breaks.
+  **All values are left empty for the owner to fill in after checking the law.** While any
+  is empty, no rota is generated and the Thursday check raises the alert.
+* The generator splits each opening day into the fewest shifts no longer than the daily
+  maximum, adds peak shifts, and fills each place with the available person with the fewest
+  hours whose week still meets every rule (incl. rest against the previous week's shifts).
+  Every shift says who and why; unfilled places are listed with the reason.
+* The rota for week N+1 is proposed on Monday of week N; if none exists on Thursday 12:00 the
+  owner gets an email (`OWNER_EMAIL`) and a banner on the dashboard.
+* Approving publishes the shifts and emails each person their shifts with a personal link
+  (`PUBLIC_BASE_URL/smjene/<token>`, no login) where they can ask a colleague to take a
+  shift. The owner approves or rejects swaps on **Raspored**; a swap that breaks a rule cannot
+  be approved. Rolling back a rota withdraws its shifts and tells the people affected.
+* Note: during a single person's break the shop is not covered; the owner decides how to
+  handle that (the generator does not plan break cover).
+
 ## The AI agent
 
 The numbers (quantities, prices, totals) are always computed by code. The model
@@ -152,6 +178,7 @@ Rollback is a *compensating action*, not a deletion:
 
 * `purchase_order`: an email already sent cannot be recalled; the rollback is refused and
   you contact the supplier directly.
+* `shift_schedule`: the rota's shifts are withdrawn and the staff are told by email.
 * `price_change`: the old price is restored and a new price-history row is written. If the
   price was changed again in the meantime, the rollback is refused (to avoid overwriting
   a newer decision).
@@ -185,5 +212,13 @@ Every rollback and refusal appears under **Dnevnik**.
 * Dashboard: sales by day (chart + table), category margin, stock cover, expiring stock
   (FIFO estimate from receipts), what to order today, notes for the owner.
 
-Phase 3+ tables (staff, shifts, content calendar, reviews) are added with the phases that
-use them.
+## What is built (Phase 3)
+
+* Staff with weekly availability grid; seasonal opening hours and peaks from config.
+* Labour-rule checks per person (daily/weekly maximum, personal maximum, daily rest incl.
+  previous week, weekly rest, breaks, availability) shared by generator and validator.
+* Explainable rota generator, weekly proposal job, Thursday deadline alert.
+* Approval publishes shifts and emails staff (notifier interface; Telegram/WhatsApp later).
+* Shift-swap flow through a personal link, owner decision re-checked against the rules.
+
+Phase 4 tables (content calendar, reviews, FAQ) are added with that phase.

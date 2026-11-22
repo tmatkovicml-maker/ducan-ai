@@ -8,6 +8,8 @@ at startup instead of falling back to guesses.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, time
+from datetime import time as dt_time
 from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
@@ -44,6 +46,8 @@ class EnvSettings(BaseSettings):
     smtp_from: str | None = None
     smtp_starttls: bool = True
     pdf_font_path: Path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+    owner_email: str | None = None
+    public_base_url: str | None = None
 
     @field_validator("secret_key")
     @classmethod
@@ -125,6 +129,91 @@ class Pricing(BaseModel):
         return self.category_floor_margin_pct.get(category, self.default_floor_margin_pct)
 
 
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+class LabourRules(BaseModel):
+    """Labour-law limits from ``labour.yaml``. None = not confirmed by the owner yet."""
+
+    max_hours_per_day: Decimal | None = None
+    max_hours_per_week: Decimal | None = None
+    min_daily_rest_hours: Decimal | None = None
+    min_weekly_rest_hours: Decimal | None = None
+    break_after_hours: Decimal | None = None
+    break_minutes: int | None = None
+
+    def missing(self) -> list[str]:
+        """Names of values the owner still has to fill in."""
+        return [name for name, value in self.model_dump().items() if value is None]
+
+
+class Peak(BaseModel):
+    """Extra staff needed in a time window."""
+
+    model_config = {"populate_by_name": True}
+
+    days: list[str] = Field(default_factory=lambda: list(WEEKDAYS))
+    from_: time = Field(alias="from")
+    to: time
+    min_staff: int = Field(ge=1)
+
+
+class Season(BaseModel):
+    """Opening hours for part of the year (month-day range, may wrap over New Year)."""
+
+    model_config = {"populate_by_name": True}
+
+    name: str
+    from_: str = Field(alias="from")
+    to: str
+    hours: dict[str, str] = Field(default_factory=dict)
+    min_staff: int = Field(default=1, ge=1)
+    peaks: list[Peak] = Field(default_factory=list)
+
+    @field_validator("hours")
+    @classmethod
+    def _check_hours(cls, value: dict[str, str]) -> dict[str, str]:
+        for day, span in value.items():
+            if day not in WEEKDAYS:
+                raise ValueError(f"unknown weekday '{day}'")
+            start, end = span.split("-")
+            if time.fromisoformat(start) >= time.fromisoformat(end):
+                raise ValueError(f"{day}: opening must be before closing")
+        return value
+
+    def contains(self, day: date) -> bool:
+        key = day.strftime("%m-%d")
+        if self.from_ <= self.to:
+            return self.from_ <= key <= self.to
+        return key >= self.from_ or key <= self.to
+
+    def opening(self, day: date) -> tuple[time, time] | None:
+        span = self.hours.get(WEEKDAYS[day.weekday()])
+        if not span:
+            return None
+        start, end = span.split("-")
+        return time.fromisoformat(start), time.fromisoformat(end)
+
+
+class RotaDeadline(BaseModel):
+    """When next week's rota must exist."""
+
+    model_config = {"populate_by_name": True}
+
+    weekday: str = "thu"
+    at: dt_time = Field(default=dt_time(12, 0), alias="time")
+
+
+class Staffing(BaseModel):
+    """Seasonal opening hours and staffing needs from ``opening_hours.yaml``."""
+
+    seasons: list[Season] = Field(default_factory=list)
+    rota_deadline: RotaDeadline = RotaDeadline()
+
+    def season_for(self, day: date) -> Season | None:
+        return next((s for s in self.seasons if s.contains(day)), None)
+
+
 class Dashboard(BaseModel):
     """Dashboard settings."""
 
@@ -146,6 +235,8 @@ class BusinessConfig(BaseModel):
     demand_prior: DemandPrior = DemandPrior()
     pricing: Pricing = Pricing()
     dashboard: Dashboard = Dashboard()
+    labour: LabourRules = LabourRules()
+    staffing: Staffing = Staffing()
 
     def season_factor(self, month: int) -> Decimal:
         """Seasonal factor for a month (1 when not configured)."""
@@ -159,10 +250,15 @@ def load_business_config(config_dir: Path) -> BusinessConfig:
         raise ConfigError(f"Missing configuration file: {path}")
     with path.open(encoding="utf-8") as fh:
         raw = yaml.safe_load(fh) or {}
+    for name, key in (("labour.yaml", "labour"), ("opening_hours.yaml", "staffing")):
+        extra = config_dir / name
+        if not extra.is_file():
+            raise ConfigError(f"Missing configuration file: {extra}")
+        raw[key] = yaml.safe_load(extra.read_text(encoding="utf-8")) or {}
     try:
         return BusinessConfig.model_validate(raw)
     except ValueError as exc:
-        raise ConfigError(f"Invalid {path}: {exc}") from exc
+        raise ConfigError(f"Invalid configuration in {config_dir}: {exc}") from exc
 
 
 @dataclass(frozen=True)
