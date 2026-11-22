@@ -27,10 +27,16 @@ make worker                  # scheduled jobs, in a second terminal
 
 `make test` runs the tests, `make lint` runs ruff.
 
+## Running on your own computer only
+
+See `docs/pokretanje-na-racunalu.md` (Croatian): Docker Desktop plus three commands with
+`docker-compose.local.yml`. The app listens on `127.0.0.1:8000` only, so other devices cannot
+reach it; `python -m ducan.setup_local` creates the `.env` with your password hash.
+
 ## Deployment (VPS)
 
 ```bash
-cp .env.example .env         # fill in; set DOMAIN; escape "$" in the hash as "$$"
+cp .env.example .env         # fill in; set DOMAIN; put the hash in single quotes: '$argon2...'
 docker compose up -d --build
 docker compose exec web python -m ducan.jobs.cli seed
 ```

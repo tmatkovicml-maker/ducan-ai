@@ -1,0 +1,47 @@
+# Dućan AI on your own computer only: http://localhost:8000
+# Not reachable from other devices (bound to 127.0.0.1), no HTTPS needed.
+#
+#   docker compose -f docker-compose.local.yml run --rm setup     # once: password -> .env
+#   docker compose -f docker-compose.local.yml up -d --build      # start
+#   docker compose -f docker-compose.local.yml exec web python -m ducan.jobs.cli seed   # once
+#   docker compose -f docker-compose.local.yml down               # stop
+
+services:
+  setup:
+    build: .
+    profiles: ["setup"]
+    user: "0:0"
+    working_dir: /app
+    command: ["python", "-m", "ducan.setup_local", "/out/.env"]
+    volumes:
+      - ./:/out
+
+  web:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      COOKIE_SECURE: "false"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro
+      - ./brand:/app/brand:ro
+      - ./seed:/app/seed:ro
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: ["python", "-m", "ducan.jobs.scheduler"]
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro
+      - ./brand:/app/brand:ro
+    restart: unless-stopped
+    depends_on:
+      - web
